@@ -38,7 +38,8 @@ classdef ins < handle
       hy;
       Kbx;Kby;albx;alby;mubx;muby;
       bcp=[0 0;0 0];
-      x;y;     
+      x;y;   
+      ghostLine         = 2;
       
       %% scheme related variables ( see cginRef for more info.)
       twilightZone       =  1;                                              % choose which twilightZone forcing function
