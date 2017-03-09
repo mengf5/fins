@@ -30,7 +30,10 @@ classdef ins < handle
       %% spatial related variables
       Nx                 = 10;
       Ny                 = 10;
-      BC                 =  2;
+      BC                 = [2 2;2 2]; % BC(axis,side)  
+                                      % 1. noslip ;    2. periodic ;
+                                      % 3. dirichlet ; 4. inlet; 
+                                      % 5. outlet;
       domain             = [-1 1; -1 1];
       Nxg;      
       Nyg;

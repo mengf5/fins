@@ -60,7 +60,7 @@ end
 
 if localBC == 1
 
-    bcStart  = M*side + (-1)^(side)*(gL+1)*Ng + 1;
+    bcStart  = M*side + (-1)^(side)*(gL)*Ng + 1;
     bcEnd    = bcStart  + (-1)^(side)*(Ng-1);
     p      =   bcStart : (-1)^(side) : bcEnd;
     
