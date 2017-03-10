@@ -14,9 +14,9 @@ _Centered FD_ is unstable.
 
 class::      ins.m
 
-                  setup(fS)
-		  
-		  getDt(fS)
+setup(fS)
+
+getDt(fS)
 		  
 regression:: caseConvergence.m
 
@@ -30,7 +30,6 @@ BC:
   1. no-slip
   2. periodic ;
   3. dirichlet ;
-  4. inlet; 
-  5. outlet;
-  6. Dirichlet;
+  4. inflow; 
+  5. outflow;
 

@@ -1,5 +1,6 @@
 function [lhsU] = formLHSVelU1New(fS)
 
+% get info from INS class 
 Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 
@@ -12,78 +13,82 @@ extOrder   = fS.extOrder;
 imTime     = fS.imTime;
 mu         = fS.mu; 
 
+% total number of grid points(including ghosts)
 M    = Nyg*Nxg;
-
+% allocate LHS matrix for U
 lhsU = spalloc(M,M,7*M);
-
+% get the indecies for all the interior points for U
 [intPts,lIntPts] = getInteriorIndex(fS);
+% put the laplacian operator onto these indecies
+lhsU = setLaplacian(lhsU,hx,hy,mu,imTime,M,pts,lPts);
 
-coeffC  =  (1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2)))) * ones(1,lIntPts);
-coeffY1 = -imTime(1)*mu*16/(12*hy^2) * ones(1,lIntPts);
-coeffY2 = -imTime(1)*mu*(-1/(12*hy^2)) * ones(1,lIntPts);
-coeffX1 = -imTime(1)*mu*16/(12*hx^2) * ones(1,lIntPts);
-coeffX2 = -imTime(1)*mu*(-1/(12*hx^2)) * ones(1,lIntPts);
-
-lhsU = lhsU + sparse(intPts,intPts,coeffC,M,M);
-%
-lhsU = lhsU + sparse(intPts,intPts+1,coeffY1,M,M);
-lhsU = lhsU + sparse(intPts,intPts-1,coeffY1,M,M);
-lhsU = lhsU + sparse(intPts,intPts+2,coeffY2,M,M);
-lhsU = lhsU + sparse(intPts,intPts-2,coeffY2,M,M);
-%
-lhsU = lhsU + sparse(intPts,intPts+Nyg,coeffX1,M,M);
-lhsU = lhsU + sparse(intPts,intPts-Nyg,coeffX1,M,M);
-lhsU = lhsU + sparse(intPts,intPts+2*Nyg,coeffX2,M,M);
-lhsU = lhsU + sparse(intPts,intPts-2*Nyg,coeffX2,M,M);
-
+% assembling boundary conditions
+% x-direction 
 axis = 0;
 for side = 0:1
-    localBC = BC(axis,side);
-    
-    switch localBC;
-        
-        case 1
-            
-            pos = 0;
-            
-            [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-            
-            coeffB = ones(1,length(lBcPts));
-            
-            lhsU   = lhsU + sparse(bcPts,bcPts,coeffB,M,M);
-            
-            pos = 1;
-            
-            [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-            
-            coeffX1 = ones(1,length(lBcPts)) * ( 8)/(12*hx) * (-1)^(side+1);
-            coeffX2 = ones(1,length(lBcPts)) * ( 1)/(12*hx) * (-1)^(side+1);
-            
-            shift1  =  ((-1)^side)*2*Nyg; 
-            shift2  =  ((-1)^side)*3*Nyg;
-            shift3  = -((-1)^side)*  Nyg;
-            
-            lhsU   = lhsU + sparse(bcPts,bcPts         , coeffX1,M,M);
-            lhsU   = lhsU + sparse(bcPts,bcPts + shift1,-coeffX1,M,M);
-            lhsU   = lhsU + sparse(bcPts,bcPts + shift2, coeffX2,M,M);
-            lhsU   = lhsU + sparse(bcPts,bcPts + shift3,-coeffX2,M,M);
-            
+
+  localBC = BC(axis,side);
+  
+  pos = 0;
+  
+  [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+  
+  switch localBC
+    case 1
+      
+      coeffB = ones(1,length(lBcPts));
+      
+      lhsU   = lhsU + sparse(bcPts,bcPts,coeffB,M,M);
+      
+    case 2
+
+      
+      
+  end
+  
+  pos = 1;
+  
+  [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+  
+  
+  switch localBC
+	 
+    case 1
+      
+      coeffX1 = ones(1,length(lBcPts)) * ( 8)/(12*hx) * (-1)^(side+1);
+      coeffX2 = ones(1,length(lBcPts)) * ( 1)/(12*hx) * (-1)^(side+1);
+      
+      shift1  =  ((-1)^side)*2*Nyg; 
+      shift2  =  ((-1)^side)*3*Nyg;
+      shift3  = -((-1)^side)*  Nyg;
+      
+      lhsU   = lhsU + sparse(bcPts,bcPts         , coeffX1,M,M);
+      lhsU   = lhsU + sparse(bcPts,bcPts + shift1,-coeffX1,M,M);
+      lhsU   = lhsU + sparse(bcPts,bcPts + shift2, coeffX2,M,M);
+      lhsU   = lhsU + sparse(bcPts,bcPts + shift3,-coeffX2,M,M);
+      
+      case 2
+  end
+  
             pos = 2;
             
             [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
             
+            coeffX1 = ones(1,length(lBcPts)) * 1/(2*hx^3) * (-1)^(side+1);
+            coeffX2 = ones(1,length(lBcPts)) * 1/(  hx^3) * (-1)^(side+1);
             
+            shift1  =  ((-1)^side)*  Nyg;
+            shift2  =  ((-1)^side)*3*Nyg;
+            shift3  =  ((-1)^side)*4*Nyg;
+            
+            lhsU   = lhsU + sparse(bcPts,bcPts         , coeffX1,M,M);
+            lhsU   = lhsU + sparse(bcPts,bcPts + shift1,-coeffX2,M,M);
+            lhsU   = lhsU + sparse(bcPts,bcPts + shift2, coeffX2,M,M);
+            lhsU   = lhsU + sparse(bcPts,bcPts + shift3,-coeffX1,M,M);
+            
+            
+                        
         case 2
-            
-            for pos = 0:2
-                
-                [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-                
-                coeffB = ones(1,length(lBcPts));
-                lhsU     = lhsU + sparse(bcPts,bcPts,coeffB,M,M);
-                
-            end
-            
             
             
     end
@@ -502,9 +507,38 @@ lhsU = sparse(lhsU);
 end
 
 
-function setupBCs(dir,L1)
-
-
-
+function L = setLaplacian(L,hx,hy,mu,imTime,M,pts,lPts)
+  
+% get the coeffcients for the laplacian dxx + dyy in fourth order
+  coeffC  =  (1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2)))) * ones(1,lPts);
+  coeffY1 = -imTime(1)*mu*16/(12*hy^2)   * ones(1,lPts);
+  coeffY2 = -imTime(1)*mu*(-1/(12*hy^2)) * ones(1,lPts);
+  coeffX1 = -imTime(1)*mu*16/(12*hx^2)   * ones(1,lPts);
+  coeffX2 = -imTime(1)*mu*(-1/(12*hx^2)) * ones(1,lPts);
+% put them o the corresponding locations in the sparse matrx
+  L = L + sparse(pts,pts,coeffC,M,M);
+% dyy
+  L = L + sparse(pts,pts+1,coeffY1,M,M);
+  L = L + sparse(pts,pts-1,coeffY1,M,M);
+  L = L + sparse(pts,pts+2,coeffY2,M,M);
+  L = L + sparse(pts,pts-2,coeffY2,M,M);
+% dxx
+  L = L + sparse(pts,pts+Nyg,coeffX1,M,M);
+  L = L + sparse(pts,pts-Nyg,coeffX1,M,M);
+  L = L + sparse(pts,pts+2*Nyg,coeffX2,M,M);
+  L = L + sparse(pts,pts-2*Nyg,coeffX2,M,M);
 
 end
+
+function setD0
+
+  
+end
+
+function setDxx
+end
+
+function setOne
+end
+
+
