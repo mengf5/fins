@@ -17,14 +17,17 @@ mu         = fS.mu;
 M    = Nyg*Nxg;
 % allocate LHS matrix for U
 lhsU = spalloc(M,M,7*M);
+lhsV = spalloc(M,M,7*M);
+
 % get the indecies for all the interior points for U
 [intPts,lIntPts] = getIndex(fS,ia+1,ib-1,ja+1,jb-1);
 % put the laplacian operator onto these indecies
 lhsU = setLaplacian(lhsU,hx,hy,mu,imTime,M,intPts,lIntPts);
+lhsV = setLaplacian(lhsV,hx,hy,mu,imTime,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction 
-axis = 0;
+for axis = 0:1
 for side = 0:1
 
   localBC = BC(axis,side);
@@ -38,16 +41,19 @@ for side = 0:1
       % u = u(t)
       pm    = 1;
       lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
+      lhsV  = setOne(lhsV,M,pm,bcPts,lBcPts);
 
     case 2
       % Laplace(U) = ...
       lhsU  = setLaplacian(lhsU,hx,hy,mu,imTime,M,bcPts,lBcPts);
+      lhsV  = setLaplacian(lhsV,hx,hy,mu,imTime,M,bcPts,lBcPts);
 
     case 3
 
       % u = u(t)
       pm    = 1;
       lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
+      lhsV  = setOne(lhsV,M,pm,bcPts,lBcPts);
       
     case 4
 
@@ -55,31 +61,73 @@ for side = 0:1
       
   end
 
-  % on the first ghost line 
-
-  pos = 1;
-  
-  [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+  % on the ghost lines 
 
   switch localBC
 	 
     case 1
+
       % u_x = -v_y
-      pm    = 1;
-      lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts)
+
+      pos = 1;
+      
+      [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+
+      if axis == 0 
+	lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts)
+	lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts)
+
+      elseif axis == 1
+	lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts)
+	lhsV  = setDx(lhsU,hy,side,1,M,bcPts,lBcPts)
+
+      end
+
+      pos = 2;
+      
+      [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+
+      if axis == 0 
+	lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts)
+	lhsV  = setExt(lhsV,hx,side,Nyg,M,bcPts,lBcPts)
+
+      elseif axis == 1
+	lhsU  = setExt(lhsU,hy,side,1,M,bcPts,lBcPts)
+	lhsV  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts)
+		
+      end
+
+
+
 
     case 2
       % u(ia-i,j)  = u(Nx - i,j)
+
+      for pos = 1:2;
+      
+      [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+
       lhsU  = setOne(lhsU,M,+1,bcPts,lBcPts);
-
-      matchLoc = (axis==0)*(Nx - pos) + (axis==1)*(pos)
-      [matchPts,lMatchPts] = getIndex(fS, matchLoc, matchLoc, ja, jb);
+      lhsV  = setOne(lhsV,M,+1,bcPts,lBcPts);
+      
+      [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,side,-pos);
+      
       lhsU  = setOne(lhsU,M,-1,matchPts,lMatchPts);
+      lhsV  = setOne(lhsV,M,-1,matchPts,lMatchPts);
 
+      end
+      
     case 3
       % u = u(t)
+      for pos = 1:2;
+      
+      [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+
       pm    = 1;
       lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
+      lhsV  = setOne(lhsV,M,pm,bcPts,lBcPts);
+
+      end
       
     case 4
 
@@ -87,114 +135,43 @@ for side = 0:1
       
   end
   
-  % on the second ghost line 
-  pos = 2;
+end  
+end
+
+
+% fix the ghost corners
+LB = getIndex(fS,ia-2,ia,ja-2,ja  );
+LT = getIndex(fS,ia-2,ia,jb  ,jb+2);
+
+RB = getIndex(fS,ia-2,ia,ja-2,ja);
+RT = getIndex(fS,ia-2,ia,ja-2,ja);
+
+switch localBC
+
+  case 1
+    
+  case 2
+    
+  case 3
+
+    
+end
+
+
+
+for Nc = 1:4
   
-  [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+  for i = 1:2
+    for j = 1:2
 
-  switch localBC
-	 
-    case 1
-      % u_xxx = -vyxx ; vxx = -vyy ...
-      pm    = 1;
-      lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts)
       
-    case 2
-      % u(ia-i,j)  = u(Nx - i,j)
-      lhsU  = setOne(lhsU,M,+1,bcPts,lBcPts);
-
-      matchLoc = (axis==0)*(Nx - pos) + (axis==1)*(pos)
-      [matchPts,lMatchPts] = getIndex(fS, matchLoc, matchLoc, ja, jb);
-      lhsU  = setOne(lhsU,M,-1,matchPts,lMatchPts);
-
-    case 3
-      % u = u(t)
-      pm    = 1;
-      lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
       
-    case 4
-
-    case 5
       
+    end
   end
-
-
-  
 end
 
 
-  
-  
-  coeffX1 = ones(1,length(lBcPts)) * 1/(2*hx^3) * (-1)^(side+1);
-  coeffX2 = ones(1,length(lBcPts)) * 1/(  hx^3) * (-1)^(side+1);
-            
-  shift1  =  ((-1)^side)*  Nyg;
-  shift2  =  ((-1)^side)*3*Nyg;
-  shift3  =  ((-1)^side)*4*Nyg;
-  
-  lhsU   = lhsU + sparse(bcPts,bcPts         , coeffX1,M,M);
-  lhsU   = lhsU + sparse(bcPts,bcPts + shift1,-coeffX2,M,M);
-  lhsU   = lhsU + sparse(bcPts,bcPts + shift2, coeffX2,M,M);
-  lhsU   = lhsU + sparse(bcPts,bcPts + shift3,-coeffX1,M,M);
-  
-  
-                        
-  
-  
-  for ix = 1:3
-    
-    if BC == 2 || BC == 6
-        
-        lhsU(ix,ix        )     =   1;
-        lhsU(ix,ix + M - 5*Nyg) =  -1;
-        
-    else
-        
-        lhsU(ix,ix) = 1;
-    end
-    
-end
-
-for ix = 4:Nyg-3
-
-    if BC == 1
-                
-%         L1(ix,ix        ) =  -1/(12*hx^2);
-%         L1(ix,ix +   Nyg) =  16/(12*hx^2);
-%         L1(ix,ix + 2*Nyg) = -30/(12*hx^2);
-%         L1(ix,ix + 3*Nyg) =  16/(12*hx^2);
-%         L1(ix,ix + 4*Nyg) =  -1/(12*hx^2);
-        
-        lhsU(ix,ix        ) =  -1/(2*hx^3);
-        lhsU(ix,ix +   Nyg) =   1/(  hx^3);
-        lhsU(ix,ix + 3*Nyg) =  -1/(  hx^3);
-        lhsU(ix,ix + 4*Nyg) =   1/(2*hx^3);
-        
-    
-    elseif BC == 2 || BC == 6
-        
-        lhsU(ix,ix        )     =   1;
-        lhsU(ix,ix + M - 5*Nyg) =  -1;
-        
-    elseif BC == 4
-        lhsU(ix,ix) = 1;
-    end
-    
-end
-
-for ix = Nyg-2:Nyg+3
-    
-    if BC == 2 || BC == 6
-        
-        lhsU(ix,ix        )     =   1;
-        lhsU(ix,ix + M - 5*Nyg) =  -1;
-        
-    else
-        
-        lhsU(ix,ix) = 1;
-    end
-    
-end
 
 if BC == 1
     %% fixed corner
@@ -581,15 +558,34 @@ function L = setDx(L,h,side,Stride,M,pts,lPts)
   shift2  =  ((-1)^side)*3*Stride;
   shift3  = -((-1)^side)*  Stride;
   
-  lhsU   = lhsU + sparse(pts,pts         , coeffX1,M,M);
-  lhsU   = lhsU + sparse(pts,pts + shift1,-coeffX1,M,M);
-  lhsU   = lhsU + sparse(pts,pts + shift2, coeffX2,M,M);
-  lhsU   = lhsU + sparse(pts,pts + shift3,-coeffX2,M,M);
+  L   = L + sparse(pts,pts         , coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift1,-coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
+  L   = L + sparse(pts,pts + shift3,-coeffX2,M,M);
   
 end
 
 function setDxx
+  
 end
+
+
+function setDxxx(L,h,side,Stride,M,pts,lPts)
+  
+  coeffX1 = ones(1,length(lPts)) * 1/(2*h^3) * (-1)^(side+1);
+  coeffX2 = ones(1,length(lPts)) * 1/(  h^3) * (-1)^(side+1);
+  
+  shift1  =  ((-1)^side)*  Stride;
+  shift2  =  ((-1)^side)*3*Stride;
+  shift3  =  ((-1)^side)*4*Stride;
+  
+  L   = L + sparse(pts,pts         , coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift1,-coeffX2,M,M);
+  L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
+  L   = L + sparse(pts,pts + shift3,-coeffX1,M,M);
+
+end
+
 
 function L = setOne(L,M,pm,pts,lPts)
 
