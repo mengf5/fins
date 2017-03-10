@@ -1,13 +1,9 @@
-function [pts,lPts] = getInteriorIndex(fS)
+function [pts,lPts] = getIndex(fS,iStart,iEnd,jStart,jEnd)
 
 Nyg = fS.Nyg;
-ia  = fS.ia;
-ib  = fS.ib;
-ja  = fS.ja;
-jb  = fS.jb;
 
-intx = ia+1:ib-1;
-inty = ja+1:jb-1;
+intx = iStart+1:iEnd-1;
+inty = jStart+1:jEnd-1;
 lIntx = (ib-1) - (ia+1) + 1;
 lInty = (jb-1) - (ja+1) + 1;
 

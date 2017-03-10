@@ -18,9 +18,9 @@ M    = Nyg*Nxg;
 % allocate LHS matrix for U
 lhsU = spalloc(M,M,7*M);
 % get the indecies for all the interior points for U
-[intPts,lIntPts] = getInteriorIndex(fS);
+[intPts,lIntPts] = getIndex(fS,ia,ib,ja,jb);
 % put the laplacian operator onto these indecies
-lhsU = setLaplacian(lhsU,hx,hy,mu,imTime,M,pts,lPts);
+lhsU = setLaplacian(lhsU,hx,hy,mu,imTime,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction 
@@ -30,25 +30,61 @@ for side = 0:1
   localBC = BC(axis,side);
   
   pos = 0;
-  
   [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
   
   switch localBC
+	 
     case 1
-      
-      coeffB = ones(1,length(lBcPts));
-      
-      lhsU   = lhsU + sparse(bcPts,bcPts,coeffB,M,M);
-      
-    case 2
+      % u = u(t)
+      pm    = 1;
+      lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
 
+    case 2
+      % Laplace(U) = ...
+      lhsU  = setLaplacian(lhsU,hx,hy,mu,imTime,M,bcPts,lBcPts);
+
+    case 3
+
+      % u = u(t)
+      pm    = 1;
+      lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
       
+    case 4
+
+    case 5
       
   end
   
   pos = 1;
   
   [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+
+  switch localBC
+	 
+    case 1
+      % u_x = -v_y
+      pm    = 1;
+      lhsU  = setDx(lhsU,M,bcPts,lBcPts);
+
+    case 2
+      % u(ia-i,j)  = u(Nx - i,j)
+
+      [pPts,lpPts] = getBCGLIndex(fS,axis,side,pos);
+
+      lhsU  = setLaplacian(lhsU,hx,hy,mu,imTime,M,bcPts,lBcPts);
+
+    case 3
+
+      % u = u(t)
+      pm    = 1;
+      lhsU  = setOne(lhsU,M,pm,bcPts,lBcPts);
+      
+    case 4
+
+    case 5
+      
+  end
+
   
   
   switch localBC
@@ -538,7 +574,11 @@ end
 function setDxx
 end
 
-function setOne
+function L = setOne(L,M,pm,pts,lPts)
+
+  coeff = pm*ones(1,length(lPts));
+  L     = L + sparse(pts,pts,coeff,M,M);
+
 end
 
 
