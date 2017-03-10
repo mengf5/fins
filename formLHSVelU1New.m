@@ -20,23 +20,12 @@ extOrder   = fS.extOrder;
 imTime     = fS.imTime;
 mu         = fS.mu; 
 
-%% interior equation
+%% get interior pts index 
 M    = Nyg*Nxg;
 
 L1 = spalloc(M,M,7*M);
 
-ia = gL+1;
-ib = Nxg - gL;
-ja = gL+1;
-jb = Nyg - gL;
-
-intx = ia+1:ib-1;
-inty = ja+1:jb-1;
-lIntx = (ib-1) - (ia+1) + 1;
-lInty = (jb-1) - (ja+1) + 1;
-
-intPts = kron((intx-1)*Nyg,ones(1,lIntx)) + kron(ones(1,lInty),inty);
-lIntPts= length(intPts);
+[intPts,lIntPts] = getInteriorIndex(fS);
 
 coeffC = ones(1,lIntPts);%*(1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2))));
 L1 = L1 + sparse(intPts,intPts,coeffC,M,M);
@@ -89,14 +78,13 @@ bcPts = kron((bcx-1)*Nyg,ones(1,lBcx)) + kron(ones(1,lBcy),bcy);
 lBcPts= length(bcPts);
 %% 
 
-
-
-
-
 coeffB = ones(1,length(lBcPts));
 L1     = L1 + sparse(bcPts,bcPts,coeffB,M,M);
 
     
+
+
+
 
 
 

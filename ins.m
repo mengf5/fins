@@ -43,7 +43,8 @@ classdef ins < handle
       Kbx;Kby;albx;alby;mubx;muby;
       bcp=[0 0;0 0];
       x;y;   
-      ghostLine         = 2;
+      gL         = 2;
+      ia;ib;ja;jb;
       
       %% scheme related variables ( see cginRef for more info.)
       twilightZone       =  1;                                              % choose which twilightZone forcing function
@@ -95,7 +96,11 @@ classdef ins < handle
            
            fS.Nxg = fS.Nx + 4; % # of x-grid + ghost points
            fS.Nyg = fS.Ny + 4; % # of y-grid + ghost points
-           
+           fS.ia  = fS.gL+1;
+           fS.ib  = fS.Nxg - fS.gL;
+           fS.ja  = fS.gL+1;
+           fS.jb  = fS.Nyg - fS.gL;
+      
            %geometry
            xs = fS.domain(1,1); % starting point in x
            xe = fS.domain(1,2); % end point in x
