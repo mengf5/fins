@@ -1,5 +1,6 @@
 function [pts,lPts] = getBCGLIndex(fS,axis,side,pos)
-
+% evaluate the boundary line, ghost line indexing for given (axis,side,position)
+%  position 0: boundary 1:first ghost line 2:second ghost line
 Nyg = fS.Nyg;
 ia  = fS.ia;
 ib  = fS.ib;

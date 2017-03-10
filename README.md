@@ -13,10 +13,15 @@ _Centered FD_ is unstable.
 ---
 
 class::      ins.m
+
                   setup(fS)
+		  
 		  getDt(fS)
+		  
 regression:: caseConvergence.m
+
 main::       main(fS)
+
 
 
 ---
