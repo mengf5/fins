@@ -34,6 +34,7 @@ classdef ins < handle
                                       % 1. noslip ;    2. periodic ;
                                       % 3. dirichlet ; 4. inlet; 
                                       % 5. outlet;
+                                      % 6. Dirichlet
       domain             = [-1 1; -1 1];
       Nxg;      
       Nyg;

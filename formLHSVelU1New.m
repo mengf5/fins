@@ -20,23 +20,37 @@ extOrder   = fS.extOrder;
 imTime     = fS.imTime;
 mu         = fS.mu; 
 
+%% interior equation
 M    = Nyg*Nxg;
 
 L1 = spalloc(M,M,7*M);
 
-intTot   = (Nx-1)*(Ny-1);
-intStart = (gL+1)*Nyg + gL + 1 + 1;
-intEnd   = intStart + intTot;
+ia = gL+1;
+ib = Nxg - gL;
+ja = gL+1;
+jb = Nyg - gL;
 
-%parfor i = intStart : intEnd
+intx = ia+1:ib-1;
+inty = ja+1:jb-1;
+lIntx = (ib-1) - (ia+1) + 1;
+lInty = (jb-1) - (ja+1) + 1;
 
-%end
+intPts = kron((intx-1)*Nyg,ones(1,lIntx)) + kron(ones(1,lInty),inty);
+lIntPts= length(intPts);
 
-p  = intStart : intEnd;
-pC = intStart : intEnd;
-coeffC = ones(1,length(p))*(1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2))));
-L1 = L1 + sparse(p,pC,coeffC,M,M);
-
+coeffC = ones(1,lIntPts);%*(1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2))));
+L1 = L1 + sparse(intPts,intPts,coeffC,M,M);
+%
+L1 = L1 + sparse(intPts,intPts+1,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts-1,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts+2,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts-2,coeffC,M,M);
+%
+L1 = L1 + sparse(intPts,intPts+Nyg,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts-Nyg,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts+2*Nyg,coeffC,M,M);
+L1 = L1 + sparse(intPts,intPts-2*Nyg,coeffC,M,M);
+%% 
 %         L1(ix,ix +1) =   -imTime(1)*mu*16/(12*hy^2);
 %         L1(ix,ix -1) =   -imTime(1)*mu*16/(12*hy^2);
 %         L1(ix,ix +2) =   -imTime(1)*mu*(-1/(12*hy^2));
@@ -47,30 +61,43 @@ L1 = L1 + sparse(p,pC,coeffC,M,M);
 %         L1(ix,ix + 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
 %         L1(ix,ix - 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
 
-
 axis = 0;
 side = 0;
-localBC = BC(axis,side);
+pos =  1;
+%localBC = BC(axis,side);
 
-if axis == 0 
-   Ng = Nyg;   
-elseif axis == 1
-   Ng = Nxg;  
-end
 
-if localBC == 1
+%% evaluate the boundary line, ghost line indexing for given (axis,side,position)
+%  position 0: boundary 1:first ghost line 2:second ghost line
 
-    bcStart  = M*side + (-1)^(side)*(gL)*Ng + 1;
-    bcEnd    = bcStart  + (-1)^(side)*(Ng-1);
-    p      =   bcStart : (-1)^(side) : bcEnd;
+bcxStart = (side==0)*ia + (side==1)*ib;
+bcyStart = (side==0)*ja + (side==1)*jb;
+
+bcxEnd = (axis==1)*((side==1)*ia + (side==0)*ib) +  (axis==0)*(bcxStart);
+bcyEnd = (axis==0)*((side==1)*ja + (side==0)*jb) +  (axis==1)*(bcyStart);
+
+lBcx = abs(bcxEnd - bcxStart) + 1;
+lBcy = abs(bcyEnd - bcyStart) + 1;
+
+bcx = bcxStart:bcxEnd;
+bcy = bcyStart:bcyEnd;
+
+bcx = (axis==0)*(bcx - (-1)^side * pos );
+bcy = (axis==1)*(bcy - (-1)^side * pos );
+
+bcPts = kron((bcx-1)*Nyg,ones(1,lBcx)) + kron(ones(1,lBcy),bcy);
+lBcPts= length(bcPts);
+%% 
+
+
+
+
+
+coeffB = ones(1,length(lBcPts));
+L1     = L1 + sparse(bcPts,bcPts,coeffB,M,M);
+
     
-    coeffB = ones(1,length(p));
-    L1     = L1 + sparse(p,p,coeffB,M,M);
-    
-elseif localBC == 2
-    
-    
-end
+
 
 
 for ix = 1:3
