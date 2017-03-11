@@ -140,37 +140,64 @@ end
 
 
 % fix the ghost corners
-LB = getIndex(fS,ia-2,ia,ja-2,ja  );
-LT = getIndex(fS,ia-2,ia,jb  ,jb+2);
 
-RB = getIndex(fS,ia-2,ia,ja-2,ja);
-RT = getIndex(fS,ia-2,ia,ja-2,ja);
 
-switch localBC
+    for sideX = 0:1
+      for sideY = 0:1
 
-  case 1
+	px = (sideX==0)*ia + (sideX==1)*ib;
+	py = (sideY==0)*ja + (sideY==1)*jb;
+
+	px1 = px - (-1)^sideX * 1;
+	py1 = py - (-1)^sideY * 1;
+	
+	px2 = px - (-1)^sideX * 2;
+	py2 = py - (-1)^sideY * 1;
+
+	px3 = px - (-1)^sideX * 1;
+	py3 = py - (-1)^sideY * 2;
+
+	px4 = px - (-1)^sideX * 2;
+	py4 = py - (-1)^sideY * 2;
+
+	p1Index = getIndex(fS,px1,px1,py1,py1);
+	p2Index = getIndex(fS,px1,px1,py1,py1);
+	p3Index = getIndex(fS,px1,px1,py1,py1);
+	p4Index = getIndex(fS,px1,px1,py1,py1);
+
+
+	p1ExtIndex = getIndex(fS,px1,px1,py1,py1);
+	
+	switch localBC
+	       
+	  case 1
+	    
+	    px11 = px1 + (-1)^(sidex)*1
+	    py11 = 
+
+
+	    lhsU(ix,ix +   Nyg + 1) = -15/4;
+	    lhsU(ix,ix + 2*Nyg + 2) = 3;
+	    lhsU(ix,ix + 3*Nyg + 3) = -1/4;
+
+	    coeff = pm*ones(1,length(lPts));
+	    L     = L + sparse(pts,pts,coeff,M,M);
+
+
+	  case 2
+	    
+	  case 3
+
+
+	end
+
+	
+      end
+    end    
     
-  case 2
     
-  case 3
 
     
-end
-
-
-
-for Nc = 1:4
-  
-  for i = 1:2
-    for j = 1:2
-
-      
-      
-      
-    end
-  end
-end
-
 
 
 if BC == 1
