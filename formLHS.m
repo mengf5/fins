@@ -4,6 +4,10 @@ function [lhsU] = formLHS(fS)
 Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 
+Nx = fS.Nx;
+Ny = fS.Ny;
+
+
 hx  = fS.hx;
 hy  = fS.hy;
 
@@ -97,9 +101,6 @@ for side = 0:1
 		
       end
 
-
-
-
     case 2
       % u(ia-i,j)  = u(Nx - i,j)
 
@@ -142,414 +143,105 @@ end
 % fix the ghost corners
 
 
-    for sideX = 0:1
-      for sideY = 0:1
-
-	px = (sideX==0)*ia + (sideX==1)*ib;
-	py = (sideY==0)*ja + (sideY==1)*jb;
-
-	px1 = px - (-1)^sideX * 1;
-	py1 = py - (-1)^sideY * 1;
-	
-	px2 = px - (-1)^sideX * 2;
-	py2 = py - (-1)^sideY * 1;
-
-	px3 = px - (-1)^sideX * 1;
-	py3 = py - (-1)^sideY * 2;
-
-	px4 = px - (-1)^sideX * 2;
-	py4 = py - (-1)^sideY * 2;
-
-	p1Index = getIndex(fS,px1,px1,py1,py1);
-	p2Index = getIndex(fS,px1,px1,py1,py1);
-	p3Index = getIndex(fS,px1,px1,py1,py1);
-	p4Index = getIndex(fS,px1,px1,py1,py1);
-
-
-	p1ExtIndex = getIndex(fS,px1,px1,py1,py1);
-	
-	switch localBC
+for sideX = 0:1
+  for sideY = 0:1
+    
+    px = (sideX==0)*ia + (sideX==1)*ib;
+    py = (sideY==0)*ja + (sideY==1)*jb;
+    
+    px1 = px - (-1)^sideX * 1;
+    py1 = py - (-1)^sideY * 1;
+    
+    px2 = px - (-1)^sideX * 2;
+    py2 = py - (-1)^sideY * 1;
+    
+    px3 = px - (-1)^sideX * 1;
+    py3 = py - (-1)^sideY * 2;
+    
+    px4 = px - (-1)^sideX * 2;
+    py4 = py - (-1)^sideY * 2;
+    
+    
+    switch localBC
 	       
 	  case 1
+
+	    for i = 1:3
+	      px1E(i) = px1 + (-1)^(sideX)*i
+	      py1E(i) = py1 + (-1)^(sideY)*i
+
+	      px2E(i) = px1 + (-1)^(sideX)*i*(2)
+	      py2E(i) = py1 + (-1)^(sideY)*i
+
+	      px3E(i) = px1 + (-1)^(sideX)*i
+	      py3E(i) = py1 + (-1)^(sideY)*i*(2)
+
+	      px4E(i) = px1 + (-1)^(sideX)*i*(2)
+	      py4E(i) = py1 + (-1)^(sideY)*i*(2)
+	    end
 	    
-	    px11 = px1 + (-1)^(sidex)*1
-	    py11 = 
-
-
-	    lhsU(ix,ix +   Nyg + 1) = -15/4;
-	    lhsU(ix,ix + 2*Nyg + 2) = 3;
-	    lhsU(ix,ix + 3*Nyg + 3) = -1/4;
-
-	    coeff = pm*ones(1,length(lPts));
-	    L     = L + sparse(pts,pts,coeff,M,M);
+	    coeff=[1,-15/4,3,-1/4];
 
 
 	  case 2
-	    
+
+	    px1E = px1 + (-1)^sideX*(Nx - 1);
+	    py1E = py1 + (-1)^sideX*(Ny - 1);
+
+	    px2E = px2 + (-1)^sideX*(Nx - 1);
+	    py2E = py2 + (-1)^sideX*(Ny - 1);
+
+	    px3E = px3 + (-1)^sideX*(Nx - 1);
+	    py3E = py3 + (-1)^sideX*(Ny - 1);
+
+	    px4E = px4 + (-1)^sideX*(Nx - 1);
+	    py4E = py4 + (-1)^sideX*(Ny - 1);
+
+	    coeff=[1,-1];
+
+
 	  case 3
+
+	    px1E=[];
+	    px2E=[];
+	    px3E=[];
+	    px4E=[];
+
+	    py1E=[];
+	    py2E=[];
+	    py3E=[];
+	    py4E=[];
+
+	    coeff=1;
+
 
 
 	end
 
+	px1 = [px1;px1E];
+	px2 = [px2;px2E];
+	px3 = [px3;px3E];
+	px4 = [px4;px4E];
+
+	py1 = [py1;py1E];
+	py2 = [py2;py2E];
+	py3 = [py3;py3E];
+	py4 = [py4;py4E];
+	
+	p1Index = getIndex(fS,px1,px1,py1,py1);
+	p2Index = getIndex(fS,px1,px1,py1,py1);
+	p3Index = getIndex(fS,px1,px1,py1,py1);
+	p4Index = getIndex(fS,px1,px1,py1,py1);
+	
+	L    = L + sparse(p1Index,p1Index,coeff,M,M);
+	L    = L + sparse(p2Index,p2Index,coeff,M,M);
+	L    = L + sparse(p3Index,p3Index,coeff,M,M);
+	L    = L + sparse(p4Index,p4Index,coeff,M,M);
 	
       end
     end    
     
     
-
-    
-
-
-if BC == 1
-    %% fixed corner
-    ix = Nyg+2;
-    lhsU(ix,ix) = 1;
-    lhsU(ix,ix +   Nyg + 1) = -15/4;
-    lhsU(ix,ix + 2*Nyg + 2) = 3;
-    lhsU(ix,ix + 3*Nyg + 3) = -1/4;
-    
-    ix = Nyg+1;
-    lhsU(ix,ix) = 1;
-    lhsU(ix,ix +   Nyg + 1*2) = -15/4;
-    lhsU(ix,ix + 2*Nyg + 2*2) = 3;
-    lhsU(ix,ix + 3*Nyg + 3*2) = -1/4;
-    
-    ix = 2;
-    lhsU(ix,ix) = 1;
-    lhsU(ix,ix + 2*  Nyg + 1) = -15/4;
-    lhsU(ix,ix + 2*2*Nyg + 2) = 3;
-    lhsU(ix,ix + 2*3*Nyg + 3) = -1/4;
-end
-
-for ix = Nyg + 4: Nyg + Nyg-3
-    
-    if BC == 1
-        
-        lhsU(ix,ix -   Nyg) =  ( 1)/(12*hx);
-        lhsU(ix,ix        ) =  (-8)/(12*hx);
-        lhsU(ix,ix + 2*Nyg) =  ( 8)/(12*hx);
-        lhsU(ix,ix + 3*Nyg) =  (-1)/(12*hx);
-    
-    elseif BC == 2 || BC == 6
-        
-        lhsU(ix,ix        )     =   1;
-        lhsU(ix,ix + M - 5*Nyg) =  -1;
-        
-    elseif BC == 4
-        lhsU(ix,ix) = 1;
-    end
-    
-end
-
-for ix = 2*Nyg-2:2*Nyg
-    
-    if BC == 2 || BC == 6
-        
-        lhsU(ix,ix        )     =   1;
-        lhsU(ix,ix + M - 5*Nyg) =  -1;
-        
-    else
-        
-        lhsU(ix,ix) = 1;
-    end
-    
-end
-
-% fix corner 
-if BC == 1
-    ix = 2*Nyg-1;
-    lhsU(ix,ix) = 1;
-    lhsU(ix,ix +   Nyg - 1) = -15/4;
-    lhsU(ix,ix + 2*Nyg - 2) = 3;
-    lhsU(ix,ix + 3*Nyg - 3) = -1/4;
-end
-
-if BC == 2 || BC == 6
-    
-    indexInterior = 2*Nyg+1;
-    
-else
-    
-    for ix = 2*Nyg+1:3*Nyg        
-        lhsU(ix,ix) = 1;
-    end
-    
-    indexInterior = 3*Nyg+1;
-    
-end
-
-for ix = indexInterior:M-3*Nyg
-    
-    if mod(ix - 2*Nyg,Nyg) == 1
-        
-        if BC == 1 || BC == 6
-            
-            if extOrder==6
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix + 1) =  -6;
-                lhsU(ix,ix + 2) =  15;
-                lhsU(ix,ix + 3) = -20;
-                lhsU(ix,ix + 4) =  15;
-                lhsU(ix,ix + 5) =  -6;
-                lhsU(ix,ix + 6) =   1;
-                
-            elseif extOrder==5
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix + 1) =  -5;
-                lhsU(ix,ix + 2) =  10;
-                lhsU(ix,ix + 3) = -10;
-                lhsU(ix,ix + 4) =   5;
-                lhsU(ix,ix + 5) =  -1;
-                
-            elseif extOrder==4
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix + 1) =  -4;
-                lhsU(ix,ix + 2) =   6;
-                lhsU(ix,ix + 3) =  -4;
-                lhsU(ix,ix + 4) =   1;
-                
-            end
-            
-        elseif BC == 2
-            
-            lhsU(ix,ix)            = 1;
-            lhsU(ix,ix + Nyg - 5 ) = -1;
-            
-        elseif BC == 4
-            lhsU(ix,ix) = 1;
-        end
-        
-    elseif mod(ix - 2*Nyg,Nyg) == 0
-        
-        if BC == 1 || BC == 6
-            
-            if extOrder==6
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix - 1) =  -6;
-                lhsU(ix,ix - 2) =  15;
-                lhsU(ix,ix - 3) = -20;
-                lhsU(ix,ix - 4) =  15;
-                lhsU(ix,ix - 5) =  -6;
-                lhsU(ix,ix - 6) =   1;
-            elseif extOrder==5
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix - 1) =  -5;
-                lhsU(ix,ix - 2) =  10;
-                lhsU(ix,ix - 3) = -10;
-                lhsU(ix,ix - 4) =   5;
-                lhsU(ix,ix - 5) =  -1;
-                
-            elseif extOrder==4
-                
-                lhsU(ix,ix    ) =   1;
-                lhsU(ix,ix - 1) =  -4;
-                lhsU(ix,ix - 2) =   6;
-                lhsU(ix,ix - 3) =  -4;
-                lhsU(ix,ix - 4) =   1;                
-                
-            end
-            
-        elseif BC == 2
-            lhsU(ix,ix)            = 1;
-            lhsU(ix,ix - Nyg + 5 ) = -1;
-            
-        elseif BC == 4
-            lhsU(ix,ix) = 1;
-        end
-        
-    elseif mod(ix - 2*Nyg,Nyg) ==  2
-        
-        if BC == 1 || BC == 6
-            
-            lhsU(ix,ix - 1) =   -1/(12*hy^2);
-            lhsU(ix,ix    ) =   16/(12*hy^2);
-            lhsU(ix,ix + 1) =  -30/(12*hy^2);
-            lhsU(ix,ix + 2) =   16/(12*hy^2);
-            lhsU(ix,ix + 3) =   -1/(12*hy^2);
-            
-        elseif BC == 2
-            lhsU(ix,ix)            = 1;
-            lhsU(ix,ix + Nyg - 5 ) = -1;
-            
-        elseif BC == 4
-            lhsU(ix,ix) = 1;
-        end
-        
-        
-    elseif mod(ix - 2*Nyg,Nyg) ==  Nyg-1
-
-        if BC == 1 || BC == 6
-            
-            lhsU(ix,ix + 1) =   -1/(12*hy^2);
-            lhsU(ix,ix    ) =   16/(12*hy^2);
-            lhsU(ix,ix - 1) =  -30/(12*hy^2);
-            lhsU(ix,ix - 2) =   16/(12*hy^2);
-            lhsU(ix,ix - 3) =   -1/(12*hy^2);
-        
-        elseif BC == 2
-            lhsU(ix,ix)            = 1;
-            lhsU(ix,ix - Nyg + 5 ) = -1;
-            
-        elseif BC == 4
-            lhsU(ix,ix) = 1;
-        end
-        
-    elseif mod(ix - 2*Nyg,Nyg) ==  3
-        
-        if BC == 2
-            lhsU(ix,ix   ) =  1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2)));
-            lhsU(ix,ix +1) =   -imTime(1)*mu*16/(12*hy^2);
-            lhsU(ix,ix -1) =   -imTime(1)*mu*16/(12*hy^2);
-            lhsU(ix,ix +2) =   -imTime(1)*mu*(-1/(12*hy^2));
-            lhsU(ix,ix -2) =   -imTime(1)*mu*(-1/(12*hy^2));
-            
-            lhsU(ix,ix + Nyg)   =   -imTime(1)*mu*16/(12*hx^2);
-            lhsU(ix,ix - Nyg)   =   -imTime(1)*mu*16/(12*hx^2);
-            lhsU(ix,ix + 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
-            lhsU(ix,ix - 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
-        else
-            
-            lhsU(ix,ix)     =   1;
-            
-        end
-        
-    elseif mod(ix - 2*Nyg,Nyg) ==  Nyg-2
-        
-        
-        if BC == 2
-            
-            lhsU(ix,ix)               =   1;
-            lhsU(ix,ix - Nyg + 5)     =   -1;
-            
-        else
-            
-            lhsU(ix,ix)     =   1;
-            
-        end
-        
-    else
-        lhsU(ix,ix   ) =  1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2)));
-        lhsU(ix,ix +1) =   -imTime(1)*mu*16/(12*hy^2);
-        lhsU(ix,ix -1) =   -imTime(1)*mu*16/(12*hy^2);
-        lhsU(ix,ix +2) =   -imTime(1)*mu*(-1/(12*hy^2));
-        lhsU(ix,ix -2) =   -imTime(1)*mu*(-1/(12*hy^2));
-        
-        lhsU(ix,ix + Nyg)   =   -imTime(1)*mu*16/(12*hx^2);
-        lhsU(ix,ix - Nyg)   =   -imTime(1)*mu*16/(12*hx^2);
-        lhsU(ix,ix + 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
-        lhsU(ix,ix - 2*Nyg) =   -imTime(1)*mu*(-1/(12*hx^2));
-        
-    end
-    
-end
-
-for ix = M-3*Nyg + 1 : M-2*Nyg
-    
-    if BC == 2 || BC == 6
-    
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    else
-        
-    lhsU(ix,ix) = 1;
-    
-    end
-end
-
-for ix = M-2*Nyg + 1 : M-2*Nyg + 3
-
-    if BC == 2 || BC == 6
-    
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    else
-        
-    lhsU(ix,ix) = 1;
-    
-    end
-    
-end
-
-for ix = M-2*Nyg + 4 : M-Nyg-3
-    
-    if BC == 1
-        
-        lhsU(ix,ix        ) =  ( 8)/(12*hx);
-        lhsU(ix,ix +   Nyg) =  (-1)/(12*hx);
-        lhsU(ix,ix - 2*Nyg) =  (-8)/(12*hx);
-        lhsU(ix,ix - 3*Nyg) =  ( 1)/(12*hx);
-    
-    elseif BC == 2 || BC == 6
-        
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    elseif BC == 4
-        
-        lhsU(ix,ix) = 1;
-    
-    end
-    
-end
-
-for ix = M-Nyg-2 : M - Nyg + 3
-    
-    if BC == 2 || BC == 6
-    
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    else
-        
-    lhsU(ix,ix) = 1;
-    
-    end
-end
-
-
-for ix = M - Nyg + 4: M-3
-    
-    if BC == 1
-        
-        lhsU(ix,ix        ) =  -1/(12*hx^2);
-        lhsU(ix,ix -   Nyg) =  16/(12*hx^2);
-        lhsU(ix,ix - 2*Nyg) = -30/(12*hx^2);
-        lhsU(ix,ix - 3*Nyg) =  16/(12*hx^2);
-        lhsU(ix,ix - 4*Nyg) =  -1/(12*hx^2);
-                
-    elseif BC == 2 || BC == 6
-        
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    elseif BC == 4
-        lhsU(ix,ix) = 1;
-    end
-end
-
-for ix = M-2:M
-    
-    if BC == 2 || BC == 6
-    
-        lhsU(ix,ix) = 1;
-        lhsU(ix,ix - M + 5*Nyg) = -1;
-        
-    else
-        
-    lhsU(ix,ix) = 1;
-    
-    end
-    
-end
-
-lhsU = sparse(lhsU);
 end
 
 
@@ -592,7 +284,26 @@ function L = setDx(L,h,side,Stride,M,pts,lPts)
   
 end
 
-function setDxx
+function setDxx(L,h,side,Stride,M,pts,lPts)
+
+  
+  lhsU(ix,ix - 1) =   -1/(12*hy^2);
+  lhsU(ix,ix    ) =   16/(12*hy^2);
+  lhsU(ix,ix + 1) =  -30/(12*hy^2);
+  lhsU(ix,ix + 2) =   16/(12*hy^2);
+  lhsU(ix,ix + 3) =   -1/(12*hy^2);
+	    
+  coeffX1 = ones(1,length(lPts)) * ( 8)/(12*h) * (-1)^(side+1);
+  coeffX2 = ones(1,length(lPts)) * ( 1)/(12*h) * (-1)^(side+1);
+  
+  shift1  =  ((-1)^side)*2*Stride; 
+  shift2  =  ((-1)^side)*3*Stride;
+  shift3  = -((-1)^side)*  Stride;
+  
+  L   = L + sparse(pts,pts         , coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift1,-coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
+  L   = L + sparse(pts,pts + shift3,-coeffX2,M,M);
   
 end
 
@@ -621,4 +332,19 @@ function L = setOne(L,M,pm,pts,lPts)
 
 end
 
+function L  = setExt(L,h,side,Stride,M,pts,lPts)
 
+  extOrder = 6;
+  coeff = [1, -6, 15, -20, 15, -6, 1];
+  
+  for i = 0:extOrder
+    shift(i)  =  ((-1)^side)*i*Stride;
+    pts       = pts
+  end
+  
+  pts      = ones(1,1+extOrder) * pts;
+  ptsShift = pts + shift;
+  
+  L   = L + sparse(pts,ptsShift, ptsShift,M,M);
+  
+end
