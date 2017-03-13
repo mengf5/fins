@@ -286,24 +286,21 @@ end
 
 function setDxx(L,h,side,Stride,M,pts,lPts)
 
+  coeffX1 = ones(1,length(lPts)) * (  16)/(12*h^2) ;
+  coeffX2 = ones(1,length(lPts)) * ( -30)/(12*h^2) ;
+  coeffX2 = ones(1,length(lPts)) * ( - 1)/(12*h^2) ;
   
-  lhsU(ix,ix - 1) =   -1/(12*hy^2);
-  lhsU(ix,ix    ) =   16/(12*hy^2);
-  lhsU(ix,ix + 1) =  -30/(12*hy^2);
-  lhsU(ix,ix + 2) =   16/(12*hy^2);
-  lhsU(ix,ix + 3) =   -1/(12*hy^2);
-	    
-  coeffX1 = ones(1,length(lPts)) * ( 8)/(12*h) * (-1)^(side+1);
-  coeffX2 = ones(1,length(lPts)) * ( 1)/(12*h) * (-1)^(side+1);
-  
-  shift1  =  ((-1)^side)*2*Stride; 
-  shift2  =  ((-1)^side)*3*Stride;
-  shift3  = -((-1)^side)*  Stride;
+  shift1  =  ((-1)^side)*(-1)*Stride; 
+  shift2  =  ((-1)^side)*  1 *Stride;
+  shift3  = -((-1)^side)*  2 *Stride;
+  shift4  = -((-1)^side)*  3 *Stride;
   
   L   = L + sparse(pts,pts         , coeffX1,M,M);
-  L   = L + sparse(pts,pts + shift1,-coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift1,-coeffX3,M,M);
   L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
-  L   = L + sparse(pts,pts + shift3,-coeffX2,M,M);
+  L   = L + sparse(pts,pts + shift3,-coeffX1,M,M);
+  L   = L + sparse(pts,pts + shift4,-coeffX3,M,M);
+
   
 end
 
