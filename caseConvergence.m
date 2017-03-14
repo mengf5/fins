@@ -21,7 +21,7 @@ fS.directSolve = 0;
 fS.plotting = 0;
 fS.makeMovie =1;
 
-fS.BC = 2;
+%fS.BC = 2;
 fS.twilightZone = 8; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
@@ -37,7 +37,7 @@ gridx = [76 151 301];
 gridy = [76 151 301];
 
 gridx = [301];
-gridy = [301];
+gridy = [201];
 
 if gridx(end) > 200 && gridy(end) > 200
     fS.directSolve = 1;    
@@ -209,7 +209,7 @@ for i = 1:length(gridx)
     
     %stabilization = [ad41,ad42,ad21,ad22,WENO,uw];
     
-    nameappen=['B',num2str(fS.BC),'T',num2str(fS.tOrder)];
+    nameappen=['T',num2str(fS.tOrder)];
     
     if fS.tOrder==4
         nameappen=[nameappen,'FT',num2str(fS.tMethod)]; %FourthTime

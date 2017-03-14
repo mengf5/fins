@@ -116,7 +116,7 @@ Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 hx  = fS.hx;
 hy  = fS.hy;
-     
+    L =  formLHS(fS);
 if (BC == 1)  || (BC == 6)
     Lp = formLHSp1;
 elseif BC == 2

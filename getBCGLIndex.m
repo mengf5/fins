@@ -16,13 +16,13 @@ bcyEnd = (axis==0)*((side==1)*ja + (side==0)*jb) +  (axis==1)*(bcyStart);
 lBcx = abs(bcxEnd - bcxStart) + 1;
 lBcy = abs(bcyEnd - bcyStart) + 1;
 
-bcx = bcxStart:bcxEnd;
-bcy = bcyStart:bcyEnd;
+bcx = min(bcxStart,bcxEnd):max(bcxStart,bcxEnd);
+bcy = min(bcyStart,bcyEnd):max(bcyStart,bcyEnd);
+% shift from boundary to ghost line wrt its pos(ition)
+bcx = bcx + (axis==0)*( - (-1)^side * pos );
+bcy = bcy + (axis==1)*( - (-1)^side * pos );
 
-bcx = (axis==0)*(bcx - (-1)^side * pos );
-bcy = (axis==1)*(bcy - (-1)^side * pos );
-
-pts = kron((bcx-1)*Nyg,ones(1,lBcx)) + kron(ones(1,lBcy),bcy);
+pts = kron((bcx-1)*Nyg,ones(1,lBcy)) + kron(ones(1,lBcx),bcy);
 lPts= length(pts);
 
 

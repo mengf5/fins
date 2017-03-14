@@ -10,7 +10,7 @@ BC  = fS.BC; % BC ==4 means dirichlet boundary conditions with exact ghost point
              % corner points are still calculated with Taylor expansion 
 
              % BC ==6 periodic in x direction, Dirichlet in y direction 
-             
+BC=2;             
 extOrder   = fS.extOrder;       
 imTime  = fS.imTime;
 mu = fS.mu; 
