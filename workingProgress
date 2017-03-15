@@ -1,0 +1,34 @@
+Whats left?
+
+comparison to centered FD
+
+-----------------------------------------------------------------------
+
+03/08/2017
+
++ added version control
++ rewrote boundary conditions(specify each boundary individually)
+%%+ added parfor
++ rewrote matrix construction
+
+- adding adaptive time stepping
+-- 3rd order with fixed leading coefficient(FLC)
+-- 4th order without FLC
+
+- trying to break the code with high Re
+-- fixing bug in y-direction (curl-curl)
+
+03/09/2017
+
++ use sparse matrix construction instead of parfor
+++ formLHSU1
+++ formLHSU1
+++ formLHSP
++ setup individual boundary conditions
+- matlab spmd LU( performance is not clear..)
+
+03/14/2017
+
+++ combine formLHSU1 and formLHSV1
+++ fix the bugs for boundary condition 2,3
+++ move this to git..

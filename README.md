@@ -6,7 +6,7 @@
  
 Adaptive IMEX time stepping.
 
-Fourth order BWENO.
+Fourth order _BWENO_.
 
 _Centered FD_ is unstable.
 
@@ -22,6 +22,13 @@ regression:: caseConvergence.m
 
 main::       main(fS)
 
+% form the LHS matrix u with implicit time stepping 
+
+formLHS(fS)
+
+% form the LHS matrix for pressure Poisson eq
+
+formLHSP(fS)
 
 
 ---

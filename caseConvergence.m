@@ -19,9 +19,9 @@ fS.CFLfix=.9;
 fS.directSolve = 0;
 
 fS.plotting = 0;
-fS.makeMovie =1;
+fS.makeMovie =0;
 
-%fS.BC = 2;
+fS.BC = [1 1;1 1];
 fS.twilightZone = 8; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
@@ -36,8 +36,8 @@ fS.uw = 0;
 gridx = [76 151 301];
 gridy = [76 151 301];
 
-gridx = [301];
-gridy = [201];
+gridx = [5];
+gridy = [6];
 
 if gridx(end) > 200 && gridy(end) > 200
     fS.directSolve = 1;    

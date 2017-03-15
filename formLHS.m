@@ -11,7 +11,7 @@ ia = fS.ia;
 ib = fS.ib;
 ja = fS.ja;
 jb = fS.jb;
-           
+
 hx  = fS.hx;
 hy  = fS.hy;
 
@@ -55,7 +55,7 @@ for axis = 0:1
             bcxStart = temp;
         end
         
-       if bcyStart>bcyEnd
+        if bcyStart>bcyEnd
             temp = bcyEnd;
             bcyEnd = bcyStart;
             bcyStart = temp;
@@ -134,10 +134,10 @@ for axis = 0:1
                 
                 if axis == 0
                     lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setExt(lhsV,hx,side,Nyg,M,bcPts,lBcPts);
+                    lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
                     
                 elseif axis == 1
-                    lhsU  = setExt(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    lhsU  = setExt(lhsU,side,1,M,bcPts);
                     lhsV  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
                     
                 end
@@ -181,7 +181,7 @@ for axis = 0:1
     end
 end
 
-% Note the righ-bottom corner point (A) 
+% Note the righ-bottom corner point (A)
 % _____
 %|     |
 %|     |
@@ -222,14 +222,14 @@ for sideX = 0:1
                     px1E(i) = px1 + (-1)^(sideX)*i;
                     py1E(i) = py1 + (-1)^(sideY)*i;
                     
-                    px2E(i) = px1 + (-1)^(sideX)*i*(2);
-                    py2E(i) = py1 + (-1)^(sideY)*i;
+                    px2E(i) = px2 + (-1)^(sideX)*i*(2);
+                    py2E(i) = py2 + (-1)^(sideY)*i;
                     
-                    px3E(i) = px1 + (-1)^(sideX)*i;
-                    py3E(i) = py1 + (-1)^(sideY)*i*(2);
+                    px3E(i) = px3 + (-1)^(sideX)*i;
+                    py3E(i) = py3 + (-1)^(sideY)*i*(2);
                     
-                    px4E(i) = px1 + (-1)^(sideX)*i*(2);
-                    py4E(i) = py1 + (-1)^(sideY)*i*(2);
+                    px4E(i) = px4 + (-1)^(sideX)*i*(2);
+                    py4E(i) = py4 + (-1)^(sideY)*i*(2);
                 end
                 
                 coeff=[1,-15/4,3,-1/4];
@@ -270,15 +270,15 @@ for sideX = 0:1
                 
         end
         
-        px1 = [px1;px1E];
-        px2 = [px2;px2E];
-        px3 = [px3;px3E];
-        px4 = [px4;px4E];
+        px1 = [px1,px1E];
+        px2 = [px2,px2E];
+        px3 = [px3,px3E];
+        px4 = [px4,px4E];
         
-        py1 = [py1;py1E];
-        py2 = [py2;py2E];
-        py3 = [py3;py3E];
-        py4 = [py4;py4E];
+        py1 = [py1,py1E];
+        py2 = [py2,py2E];
+        py3 = [py3,py3E];
+        py4 = [py4,py4E];
         
         for i = 1:length(px1)
             p1Index = getIndex(fS,px1(i),px1(i),py1(i),py1(i));
@@ -324,8 +324,8 @@ end
 
 function L = setDx(L,h,side,Stride,M,pts,lPts)
 
-coeffX1 = ones(1,length(lPts)) * ( 8)/(12*h) * (-1)^(side+1);
-coeffX2 = ones(1,length(lPts)) * ( 1)/(12*h) * (-1)^(side+1);
+coeffX1 = ones(1,lPts) * ( 8)/(12*h) * (-1)^(side+1);
+coeffX2 = ones(1,lPts) * ( 1)/(12*h) * (-1)^(side+1);
 
 shift1  =  ((-1)^side)*2*Stride;
 shift2  =  ((-1)^side)*3*Stride;
@@ -340,20 +340,20 @@ end
 
 function L = setDxx(L,h,side,Stride,M,pts,lPts)
 
-coeffX1 = ones(1,length(lPts)) * (  16)/(12*h^2) ;
-coeffX2 = ones(1,length(lPts)) * ( -30)/(12*h^2) ;
-coeffX3 = ones(1,length(lPts)) * ( - 1)/(12*h^2) ;
+coeffX1 = ones(1,lPts) * (  16)/(12*h^2) ;
+coeffX2 = ones(1,lPts) * ( -30)/(12*h^2) ;
+coeffX3 = ones(1,lPts) * ( - 1)/(12*h^2) ;
 
 shift1  =  ((-1)^side)*(-1)*Stride;
 shift2  =  ((-1)^side)*  1 *Stride;
-shift3  = -((-1)^side)*  2 *Stride;
-shift4  = -((-1)^side)*  3 *Stride;
+shift3  =  ((-1)^side)*  2 *Stride;
+shift4  =  ((-1)^side)*  3 *Stride;
 
 L   = L + sparse(pts,pts         , coeffX1,M,M);
-L   = L + sparse(pts,pts + shift1,-coeffX3,M,M);
+L   = L + sparse(pts,pts + shift1, coeffX3,M,M);
 L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
-L   = L + sparse(pts,pts + shift3,-coeffX1,M,M);
-L   = L + sparse(pts,pts + shift4,-coeffX3,M,M);
+L   = L + sparse(pts,pts + shift3, coeffX1,M,M);
+L   = L + sparse(pts,pts + shift4, coeffX3,M,M);
 
 
 end
@@ -361,8 +361,8 @@ end
 
 function L = setDxxx(L,h,side,Stride,M,pts,lPts)
 
-coeffX1 = ones(1,length(lPts)) * 1/(2*h^3) * (-1)^(side+1);
-coeffX2 = ones(1,length(lPts)) * 1/(  h^3) * (-1)^(side+1);
+coeffX1 = ones(1,lPts) * 1/(2*h^3) * (-1)^(side+1);
+coeffX2 = ones(1,lPts) * 1/(  h^3) * (-1)^(side+1);
 
 shift1  =  ((-1)^side)*  Stride;
 shift2  =  ((-1)^side)*3*Stride;
@@ -378,7 +378,7 @@ end
 
 function L = setOne(L,M,pm,pts,matchPts,lPts)
 
-coeff = pm*ones(1,length(lPts));
+coeff = pm*ones(1,lPts);
 L     = L + sparse(pts,matchPts,coeff,M,M);
 
 end
@@ -396,13 +396,13 @@ function L  = setExt(L,side,Stride,M,pts)
 extOrder = 6;
 coeff = [1, -6, 15, -20, 15, -6, 1];
 
-for i = 0:extOrder
-    shift(i)  =  ((-1)^side)*i*Stride;
+for i = 1:extOrder+1
+    
+    shift  =  ((-1)^side)*(i-1)*Stride;
+    
+    ptsShift = pts + shift;
+    
+    L   = L + sparse(pts,ptsShift, coeff(i),M,M);
 end
-
-pts      = ones(1,1+extOrder) * pts;
-ptsShift = pts + shift;
-
-L   = L + sparse(pts,ptsShift, coeff,M,M);
 
 end
