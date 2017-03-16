@@ -290,6 +290,11 @@ for sideX = 0:1
             lhsU    = lhsU + sparse(px2Index,p2Index,coeff(i),M,M);
             lhsU    = lhsU + sparse(px3Index,p3Index,coeff(i),M,M);
             lhsU    = lhsU + sparse(px4Index,p4Index,coeff(i),M,M);
+            
+            lhsV    = lhsV + sparse(px1Index,p1Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px2Index,p2Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px3Index,p3Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px4Index,p4Index,coeff(i),M,M);
         end
         
     end

@@ -1,4 +1,4 @@
-function [lhsU] = formLHSP(fS)
+function [lhsP] = formLHSP(fS)
 
 % get info from INS class
 Nxg = fS.Nxg;
@@ -24,14 +24,12 @@ mu         = fS.mu;
 % total number of grid points(including ghosts)
 M    = Nyg*Nxg;
 % allocate LHS matrix for U
-lhsU = spalloc(M,M,7*M);
-lhsV = spalloc(M,M,7*M);
+lhsP = spalloc(M,M,7*M);
 
 % get the indecies for all the interior points for U
 [intPts,lIntPts] = getIndex(fS,ia+1,ib-1,ja+1,jb-1);
 % put the laplacian operator onto these indecies
-lhsU = setLaplacian(lhsU,hx,hy,Nyg,mu,imTime,M,intPts,lIntPts);
-lhsV = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,intPts,lIntPts);
+lhsP = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction
@@ -39,10 +37,12 @@ for axis = 0:1
     for side = 0:1
         
         localBC = BC(axis+1,side+1);
-        % on the boundary
+        % get the boundary indecies
         pos = 0;
         [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
         
+        % if the corner point has been set, set them to zero
+        %------------------------------------------------------------------
         bcxStart = (side==0)*ia + (side==1)*ib;
         bcyStart = (side==0)*ja + (side==1)*jb;
         
@@ -62,42 +62,40 @@ for axis = 0:1
         end
         
         [allBcPts,lAllBcPts] = getIndex(fS,bcxStart,bcxEnd,bcyStart,bcyEnd);
-        lhsU = setZero(lhsU,M,allBcPts,lAllBcPts);
+        lhsP = setZero(lhsP,M,allBcPts,lAllBcPts);
+        %------------------------------------------------------------------
         
         switch localBC
             
             case 1
-                % u = u(t)
-                pm    = 1;
-                lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
-                lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+                % Laplace(P) = ...
+                lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
                 
             case 2
-                % Laplace(U) = ...
+                % Laplace(P) = ...
                 if side == 0
-                    lhsU  = setLaplacian(lhsU,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                    lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
                     lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
                     
                 elseif side == 1
                     
-                    %[bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-                    
-                    lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
+                    lhsP  = setOne(lhsP,M,+1,bcPts,bcPts,lBcPts);
                     lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
                     
                     matchSide = 0;
                     [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
                     
-                    lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
+                    lhsP  = setOne(lhsP,M,-1,bcPts,matchPts,lMatchPts);
                     lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
                     
                 end
                 
             case 3
                 
-                % u = u(t)
+                % P = P(t)
                 pm    = 1;
-                lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
+                lhsP  = setOne(lhsP,M,pm,bcPts,bcPts,lBcPts);
                 lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
                 
             case 4
@@ -107,67 +105,60 @@ for axis = 0:1
         end
         
         % on the ghost lines
-        
+        %------------------------------------------------------------------
         switch localBC
             
             case 1
                 
-                % u_x = -v_y
+                % p_n = ...
                 
                 pos = 1;
                 
                 [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
                 
                 if axis == 0
-                    lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts);
-                    
+                    lhsP  = setDx(lhsP,hx,side,Nyg,M,bcPts,lBcPts);
                 elseif axis == 1
-                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
-                    lhsV  = setDx(lhsU,hy,side,1,M,bcPts,lBcPts);
-                    
+                    lhsP  = setDx(lhsP,hy,side,1,M,bcPts,lBcPts);
                 end
                 
+                % extrapolation 
                 pos = 2;
                 
-                [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                [bcPts,~] = getBCGLIndex(fS,axis,side,pos);
                 
                 if axis == 0
-                    lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
+                    lhsP  = setExt4(lhsP,side,Nyg,M,bcPts);
                     
                 elseif axis == 1
-                    lhsU  = setExt(lhsU,side,1,M,bcPts);
-                    lhsV  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    lhsP  = setExt4(lhsP,side,1,M,bcPts);
                     
                 end
                 
             case 2
-                % u(ia-i,j)  = u(Nx - i,j)
+                % P(ia-i,j)  = P(Nx - i,j)
                 
                 for pos = 1:2;
                     
                     [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
                     
-                    lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
-                    lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
+                    lhsP  = setOne(lhsP,M,+1,bcPts,bcPts,lBcPts);
                     
                     matchSide = abs(side-1);
                     [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
                     
-                    lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
-                    lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
+                    lhsP  = setOne(lhsP,M,-1,bcPts,matchPts,lMatchPts);
                     
                 end
                 
             case 3
-                % u = u(t)
+                % P = P(t)
                 for pos = 1:2;
                     
                     [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
                     
                     pm    = 1;
-                    lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
+                    lhsP  = setOne(lhsP,M,pm,bcPts,bcPts,lBcPts);
                     lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
                     
                 end
@@ -286,10 +277,10 @@ for sideX = 0:1
             p3Index = getIndex(fS,px3(i),px3(i),py3(i),py3(i));
             p4Index = getIndex(fS,px4(i),px4(i),py4(i),py4(i));
             
-            lhsU    = lhsU + sparse(px1Index,p1Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px2Index,p2Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px3Index,p3Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px4Index,p4Index,coeff(i),M,M);
+            lhsP    = lhsP + sparse(px1Index,p1Index,coeff(i),M,M);
+            lhsP    = lhsP + sparse(px2Index,p2Index,coeff(i),M,M);
+            lhsP    = lhsP + sparse(px3Index,p3Index,coeff(i),M,M);
+            lhsP    = lhsP + sparse(px4Index,p4Index,coeff(i),M,M);
         end
         
     end
@@ -307,13 +298,16 @@ coeffY1 = -imTime(1)*mu*16/(12*hy^2)   * ones(1,lPts);
 coeffY2 = -imTime(1)*mu*(-1/(12*hy^2)) * ones(1,lPts);
 coeffX1 = -imTime(1)*mu*16/(12*hx^2)   * ones(1,lPts);
 coeffX2 = -imTime(1)*mu*(-1/(12*hx^2)) * ones(1,lPts);
+
 % put them o the corresponding locations in the sparse matrx
 L = L + sparse(pts,pts,coeffC,M,M);
+
 % dyy
 L = L + sparse(pts,pts+1,coeffY1,M,M);
 L = L + sparse(pts,pts-1,coeffY1,M,M);
 L = L + sparse(pts,pts+2,coeffY2,M,M);
 L = L + sparse(pts,pts-2,coeffY2,M,M);
+
 % dxx
 L = L + sparse(pts,pts+Nyg,coeffX1,M,M);
 L = L + sparse(pts,pts-Nyg,coeffX1,M,M);
@@ -391,10 +385,10 @@ L(pts,:)     = coeffZero;
 
 end
 
-function L  = setExt(L,side,Stride,M,pts)
+function L  = setExt4(L,side,Stride,M,pts)
 
-extOrder = 6;
-coeff = [1, -6, 15, -20, 15, -6, 1];
+extOrder = 4;
+coeff = [1, -4, 6, -4, 1];
 
 for i = 1:extOrder+1
     
