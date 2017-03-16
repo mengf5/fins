@@ -248,7 +248,8 @@ end
 %--------------------------------------------------------------------------
 
 if tExplicit==1
-    % explicit time stepper 
+  % explicit time stepper
+  %--------------------------------------------------------------------------
     if tOrder==2
         
         U(i,j) = timeint(1)*rhsuC...
@@ -300,7 +301,7 @@ if tExplicit==1
     
 elseif tExplicit==0
     % implicit time stepper 
-    
+    %-------------------------------------------------------------------------------    
     if count>1
         
         if tw == 1
@@ -513,7 +514,7 @@ for axis = 0:1
                 if axis == 0
                     
                     U(i,J) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
-                    V(i,J) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
+                    V(i,J) = getCompVxx(x(bcx,bcy),y(bcx,bcy),t2);
                     
                 elseif axis == 1
                     
@@ -1756,7 +1757,55 @@ count = count + 1;
         
     end
 
+    function getCompUxx(fS,bcx,bcy,axis,side,pos)
 
+      if axis == 0
+	iB = bcx - (-1)^side*pos
+	jB = bcy
+      end
+
+      
+      if twilightZone > 0 
+
+	dudx2 = fS.dudx2;
+	dudx  = fS.dudx;
+	dvdx2 = fS.dvdx2;
+	
+	dvdy2 = fS.dvdy2;
+	dvdy  = fS.dvdy;
+	dudy2 = fS.dudy2;
+	dpdx  = fS.dpdx;
+	dpdy  = fS.dpdy;
+	
+	dudxy = fS.dudxy;
+	dvdxy = fS.dvdxy;
+	
+      end
+
+      i = 2;
+      iB = i+1;
+      dir=1;
+      if tOrder==2
+        dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
+      elseif tOrder==4
+        dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
+		   %            dpdyApprox = dpdy(x(iB,J),y(iB,J),t2);
+      end
+      
+      V(i,J) = (1/mu)*(dvdt(x(iB,J),y(iB,J),t2) ...
+		       +  u(x(iB,J),y(iB,J),t2).*dvdx(x(iB,J),y(iB,J),t2) ...
+		       +  v(x(iB,J),y(iB,J),t2).*dvdy(x(iB,J),y(iB,J),t2) ...
+		       + dpdyApprox ...  % need to touch this
+		       - fy(x(iB,J),y(iB,J),t2)) ...
+               - dvdy2(x(iB,J),y(iB,J),t2);
+      
+				%V(i,J) = dvdx2(x(iB,J),y(iB,J),t2);
+      
+
+      
+
+
+    end
 
     function V = solveGhostV(V,U,UC,UP1,UP2)
         
