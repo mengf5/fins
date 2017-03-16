@@ -238,15 +238,17 @@ if tExplicit==1
     
 end
 %--------------------------------------------------------------------------
+% count = 0 is the start up stage, if count =0, rhsuC, rhsvC are all we need 
+% count = 1 is the predictor 
+% count > 1 is the corrector 
 if count == 0
     return
 end
 
-
-
+%--------------------------------------------------------------------------
 
 if tExplicit==1
-    
+    % explicit time stepper 
     if tOrder==2
         
         U(i,j) = timeint(1)*rhsuC...
@@ -297,7 +299,7 @@ if tExplicit==1
     
     
 elseif tExplicit==0
-    
+    % implicit time stepper 
     
     if count>1
         
@@ -445,7 +447,134 @@ elseif tExplicit==0
 end
 
 
-%% calculating ghost points
+% calculating boundary and ghost points
+
+for axis = 0:1
+    for side = 0:1
+        
+        localBC = BC(axis+1,side+1);
+        % on the boundary
+        pos = 0;
+        
+        [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+        
+        switch localBC
+            
+            case 1
+                % u = u(t)
+                U(I,J) = u(x(bcx),y(bcy),t2);
+                V(I,J) = v(x(bcx),y(bcy),t2);
+                
+            case 2
+                % Laplace(U) = ...
+                if side == 0
+                    lhsU  = setLaplacian(lhsU,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                    lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                    
+                elseif side == 1
+                    
+                    %[bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                    
+                    lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
+                    lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
+                    
+                    matchSide = 0;
+                    [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
+                    
+                    lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
+                    lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
+                    
+                end
+                
+            case 3
+                
+                % u = u(t)
+                pm    = 1;
+                lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
+                lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+                
+            case 4
+                
+            case 5
+                
+        end
+        
+        % on the ghost lines
+        
+        switch localBC
+            
+            case 1
+                
+                % u_x = -v_y                
+                pos = 1;
+      
+                [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+                
+                if axis == 0
+                    lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
+                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts);
+                    
+                elseif axis == 1
+                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    lhsV  = setDx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    
+                end
+                
+                pos = 2;
+                
+                [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                
+                if axis == 0
+                    lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
+                    lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
+                    
+                elseif axis == 1
+                    lhsU  = setExt(lhsU,side,1,M,bcPts);
+                    lhsV  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    
+                end
+                
+            case 2
+                % u(ia-i,j)  = u(Nx - i,j)
+                
+                for pos = 1:2;
+                    
+                    [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                    
+                    lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
+                    lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
+                    
+                    matchSide = abs(side-1);
+                    [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
+                    
+                    lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
+                    lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
+                    
+                end
+                
+            case 3
+                % u = u(t)
+                for pos = 1:2;
+                    
+                    [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                    
+                    pm    = 1;
+                    lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
+                    lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+                    
+                end
+                
+            case 4
+                
+            case 5
+                
+        end
+        
+    end
+end
+
+
+
 % boundary points
 if tExplicit == 1
     switch BC
@@ -1852,6 +1981,31 @@ count = count + 1;
 
 end
 
-function readInfS(fS)
+function [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos)
+        
+        bcxStart = (side==0)*ia + (side==1)*ib;
+        bcyStart = (side==0)*ja + (side==1)*jb;
+        
+        bcxEnd = (axis==1)*((side==1)*ia + (side==0)*ib) +  (axis==0)*(bcxStart);
+        bcyEnd = (axis==0)*((side==1)*ja + (side==0)*jb) +  (axis==1)*(bcyStart);
+        
+        if bcxStart>bcxEnd
+            temp = bcxEnd;
+            bcxEnd = bcxStart;
+            bcxStart = temp;
+        end
+        
+        if bcyStart>bcyEnd
+            temp = bcyEnd;
+            bcyEnd = bcyStart;
+            bcyStart = temp;
+        end
+        
+
+        bcx = min(bcxStart,bcxEnd):max(bcxStart,bcxEnd);
+        bcy = min(bcyStart,bcyEnd):max(bcyStart,bcyEnd);
+        % shift from boundary to ghost line wrt its pos(ition)
+        bcx = bcx + (axis==0)*( - (-1)^side * pos );
+        bcy = bcy + (axis==1)*( - (-1)^side * pos );
 
 end
