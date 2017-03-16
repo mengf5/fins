@@ -1,5 +1,7 @@
-function [count,U,V,rhsuC,rhsvC,maxgrad] = VelocitySolver(t1,t2,count,fS)
-%% read in fS
+function [count,U,V,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS)
+
+%read in fS;
+%--------------------------------------------------------------------------
 dt  = fS.dt;
 dte = fS.dte;
 dtn = fS.dtn;
@@ -89,27 +91,25 @@ ia = fS.ia;
 ib = fS.ib;
 ja = fS.ja;
 jb = fS.jb;
-
-%% solve velocity
+%--------------------------------------------------------------------------
 
 % initialization
+%--------------------------------------------------------------------------
 U = zeros(Nxg,Nyg);
 V = zeros(Nxg,Nyg);
 d4u1 = zeros(Nxg,Nyg);
 d4v1 = zeros(Nxg,Nyg);
 maxgrad = 0;
+%--------------------------------------------------------------------------
 
-% if BC == 2 || BC == 6
-%     i = 3:Nxg-3;
-%     j = 3:Nyg-3;
-% else
-%     i = 4:Nxg-3;
-%     j = 4:Nyg-3;
-% end
 
+% fill in interior 
+%--------------------------------------------------------------------------
 i = ia+1:ib-1;
 j = ja+1:jb-1;
 
+% calculate artifitial dissipation
+%--------------------------------------------------------------------------
 if max(abs(ad41),abs(ad42)) > 0
     
     graduv1 = 0.25*(abs((-UN(i+2,j) + 8*UN(i+1,j) - 8*UN(i-1,j) + UN(i-2,j))/(12*hx)) + ...
@@ -128,9 +128,12 @@ if max(abs(ad41),abs(ad42)) > 0
     d4u1(i,j) = -(ad41+graduv1*ad42).*lapu1;
     d4v1(i,j) = -(ad41+graduv1*ad42).*lapv1;
 end
+%--------------------------------------------------------------------------
 
-if cons == 1
+if cons == 1 
+    % non-conservative form cons == 1 
     if WENO == 1
+        % BWENO 
         dirx = [1,0];
         diry = [0,1];
         
@@ -142,6 +145,7 @@ if cons == 1
         vx = WENOFlux(VN,UN,dirx,hx,i,j,UF);
         vy = WENOFlux(VN,VN,diry,hy,i,j,VF);
     else
+        % centered difference  
         ux(i,j) = (-UN(i+2,j) + 8*UN(i+1,j) - 8*UN(i-1,j) + UN(i-2,j))/(12*hx);
         uy(i,j) = (-UN(i,j+2) + 8*UN(i,j+1) - 8*UN(i,j-1) + UN(i,j-2))/(12*hy);
         vx(i,j) = (-VN(i+2,j) + 8*VN(i+1,j) - 8*VN(i-1,j) + VN(i-2,j))/(12*hx);
@@ -152,7 +156,7 @@ if cons == 1
     convv(i,j) = UN(i,j).*vx(i,j) + VN(i,j).*vy(i,j);
     
 else
-    
+    % divR 
     div21u1 = ((1/2*(UN(i+1,j)+UN(i,j))).^2 - (1/2*(UN(i,j)+UN(i-1,j))).^2)/(hx) + ...
         ((1/2*(VN(i,j+1)+VN(i,j))).*(1/2*(UN(i,j+1)+UN(i,j))) ...
         - (1/2*(VN(i,j-1)+VN(i,j))).*(1/2*(UN(i,j-1)+UN(i,j))))/(hy);
@@ -173,7 +177,7 @@ else
     convv(i,j) = 4/3*div21v1 - 1/3*div22v1;
     
     if cons==3
-        
+        % skew symmetric
         cont1(i,j) = (UN(i+1,j)-UN(i-1,j))/(2*hx) + (VN(i,j+1)-VN(i,j-1))/(2*hy);
         cont2(i,j) = (UN(i+2,j)-UN(i-2,j))/(4*hx) + (VN(i,j+2)-VN(i,j-2))/(4*hy);
         
@@ -191,6 +195,8 @@ else
     
 end
 
+% form the rhs matrix of the convective part fE - convU - p_x
+%--------------------------------------------------------------------------
 rhsuC =  fxE(x(i,j),y(i,j),t1) ...
     + d4u1(i,j) + ...
     - convu(i,j)...
@@ -200,8 +206,10 @@ rhsvC = beta*g*(TemN(i,j)-tref) + fyE(x(i,j),y(i,j),t1) ...
     + d4v1(i,j) + ...
     - convv(i,j) ...
     - (-PN(i,j+2) + 8*PN(i,j+1) - 8*PN(i,j-1) + PN(i,j-2))/(12*hy);
+%--------------------------------------------------------------------------
 
-
+% form the rhs matrix of the diffusion part fI + mn*laplacian(U)
+%--------------------------------------------------------------------------
 if tw==1
     
     fxC = fxI(x(i,j),y(i,j),t1);
@@ -229,11 +237,12 @@ if tExplicit==1
     rhsvC = rhsvC + rhsvImC;
     
 end
-
-
+%--------------------------------------------------------------------------
 if count == 0
     return
 end
+
+
 
 
 if tExplicit==1
@@ -1843,3 +1852,6 @@ count = count + 1;
 
 end
 
+function readInfS(fS)
+
+end

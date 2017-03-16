@@ -13,7 +13,7 @@ nadapt    = fS.numberOfAdapt;
 tOrder    = fS.tOrder;
 tExplicit = fS. tExplicit;
 tMethod   = fS.tMethod;
-extOrder  = fS.extOrder;
+%extOrder  = fS.extOrder;
 
 if fS.makeMovie == 1
     movieU = VideoWriter('movieU.avi');
@@ -32,7 +32,7 @@ end
 %--------------------------------------------------------------------------
 
 al = fS.al;
-K  = fS.K;
+% K  = fS.K;
 mu = fS.mu;
 tref = fS.tref;
 beta = fS.beta;
@@ -44,9 +44,9 @@ g = fS.g;
 
 %Expression of analytical soln twilight zone method
 syms t x y
-t = t;
-x = x;
-y = y;
+% t = t;
+% x = x;
+% y = y;
 
 %--------------------------------------------------------------------------
 % time and space discretization
@@ -65,7 +65,6 @@ getDt(fS);
 dt=fS.dt;
 x= fS.x;
 y= fS.y;
-
 
 tP1 = dt*(tOrder-1);
 tC  = dt*tOrder;
@@ -116,14 +115,15 @@ Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 hx  = fS.hx;
 hy  = fS.hy;
-    L =  formLHS(fS);
-if (BC == 1)  || (BC == 6)
-    Lp = formLHSp1;
-elseif BC == 2
-    Lp = formLHSp2;
-elseif (BC == 3) || (BC == 4)
-    Lp = formLHSp3;    
-end
+
+Lp =  formLHSP(fS);
+% if (BC == 1)  || (BC == 6)
+%     Lp = formLHSp1;
+% elseif BC == 2
+%     Lp = formLHSp2;
+% elseif (BC == 3) || (BC == 4)
+%     Lp = formLHSp3;    
+% end
 
 fS.Lp = Lp;
 
@@ -138,20 +138,15 @@ end
 
 if  tExplicit == 0
     
-    imTime    = fS.imTime;
-    
-    Lp = formLHSVelU1(fS);
-    [Lul,Luu,Up] = lu(Lp);
-    
-    fS.Lu = Lp;
-    
-    Lp = formLHSVelV1(fS);
-    [Lvl,Lvu,Vp] = lu(Lp);
-    
-    fS.Lv = Lp;
+%     imTime    = fS.imTime;    
+    [Lu, Lv]   = formLHS(fS);
+    fS.Lu = Lu;    
+    fS.Lv = Lv;
 
     if fS.directSolve == 0
         
+        [Lul,Luu,Up] = lu(Lu);
+        [Lvl,Lvu,Vp] = lu(Lv);
         fS.Lul = Lul;
         fS.Luu = Luu;
         fS.Up  = Up;
@@ -654,261 +649,6 @@ end
         
         
     end
-    function [L1] = formLHSp1
-
-        M  = Nyg*Nxg;
-        
-        L1 = spalloc(M,M,7*M);
-        
-        if BC == 1
-            
-            for ix = 1:2
-                
-                L1(ix,ix) = 1;
-            end
-            
-            for ix = 3:Nyg-2
-                
-                L1(ix,ix        ) =  1;
-                L1(ix,ix +   Nyg) = -4;
-                L1(ix,ix + 2*Nyg) =  6;
-                L1(ix,ix + 3*Nyg) = -4;
-                L1(ix,ix + 4*Nyg) =  1;
-                
-            end
-            
-            for ix = Nyg-1:Nyg+2
-                
-                L1(ix,ix) = 1;
-                
-            end
-            
-            for ix = Nyg + 3: Nyg + Nyg-2
-                
-                L1(ix,ix        ) =  (-8)/(12*hx);
-                L1(ix,ix -   Nyg) =  ( 1)/(12*hx);
-                L1(ix,ix + 2*Nyg) =  ( 8)/(12*hx);
-                L1(ix,ix + 3*Nyg) =  (-1)/(12*hx);
-                
-            end
-            
-            for ix = 2*Nyg-1:2*Nyg
-                
-                L1(ix,ix) = 1;
-                
-            end
-            
-            
-        elseif BC ==6
-            
-            for ix = 1:2*Nyg;
-                
-                L1(ix,ix        )     =   1;
-                L1(ix,ix + M - 5*Nyg) =  -1;
-                
-            end
-            
-        end
-        
-        
-        if BC == 1
-            
-            indexInterior = M-2*Nyg;
-        
-        elseif BC == 6
-            
-            indexInterior = M-3*Nyg;
-            
-        end
-        
-        for ix = 2*Nyg+1:indexInterior
-            
-            if mod(ix - 2*Nyg,Nyg) == 1
-                
-                L1(ix,ix    ) =  1;
-                L1(ix,ix + 1) = -4;
-                L1(ix,ix + 2) =  6;
-                L1(ix,ix + 3) = -4;
-                L1(ix,ix + 4) =  1;                
-                
-            elseif mod(ix - 2*Nyg,Nyg) == 0
-                
-                L1(ix,ix    ) =  1;
-                L1(ix,ix - 1) = -4;
-                L1(ix,ix - 2) =  6;
-                L1(ix,ix - 3) = -4;
-                L1(ix,ix - 4) =  1;
-                
-            elseif mod(ix - 2*Nyg,Nyg) ==  2
-                
-                L1(ix,ix    ) =  (-8)/(12*hy);
-                L1(ix,ix - 1) =  ( 1)/(12*hy);
-                L1(ix,ix + 2) =  ( 8)/(12*hy);
-                L1(ix,ix + 3) =  (-1)/(12*hy);
-                
-            elseif mod(ix - 2*Nyg,Nyg) ==  Nyg-1
-                
-                L1(ix,ix    ) =  ( 8)/(12*hy);
-                L1(ix,ix + 1) =  (-1)/(12*hy);
-                L1(ix,ix - 2) =  (-8)/(12*hy);
-                L1(ix,ix - 3) =  ( 1)/(12*hy);
-                
-                
-            else
-                L1(ix,ix   ) =  -(30/(12*hy^2)+30/(12*hx^2));
-                L1(ix,ix +1) =  16/(12*hy^2);
-                L1(ix,ix -1) =  16/(12*hy^2);
-                L1(ix,ix +2) =    -1/(12*hy^2);
-                L1(ix,ix -2) =    -1/(12*hy^2);
-                
-                L1(ix,ix + Nyg) =   16/(12*hx^2);
-                L1(ix,ix - Nyg) =   16/(12*hx^2);
-                L1(ix,ix + 2*Nyg) =   -1/(12*hx^2);
-                L1(ix,ix - 2*Nyg) =   -1/(12*hx^2);
-                
-            end
-            
-        end
-        
-        
-        if BC == 1
-            
-            for ix = M-2*Nyg + 1 : M-2*Nyg + 2
-                L1(ix,ix) = 1;
-            end
-            
-            for ix = M-2*Nyg + 3 : M-Nyg-2
-                L1(ix,ix        ) =  ( 8)/(12*hx);
-                L1(ix,ix +   Nyg) =  (-1)/(12*hx);
-                L1(ix,ix - 2*Nyg) =  (-8)/(12*hx);
-                L1(ix,ix - 3*Nyg) =  ( 1)/(12*hx);
-            end
-            
-            for ix = M-Nyg-1 : M - Nyg + 2
-                L1(ix,ix)=  1;
-            end
-            
-            
-            for ix = M - Nyg + 3: M-2
-                L1(ix,ix)     =  1;
-                L1(ix,ix -   Nyg) = -4;
-                L1(ix,ix - 2*Nyg) =  6;
-                L1(ix,ix - 3*Nyg) = -4;
-                L1(ix,ix - 4*Nyg) =  1;
-            end
-            
-            for ix = M-1:M
-                L1(ix,ix)=1;
-            end
-            
-        elseif BC ==6
-            
-            for ix = (M-3*Nyg + 1):M;
-                
-                L1(ix,ix        )     =   1;
-                L1(ix,ix - M + 5*Nyg) =  -1;
-                
-            end
-            
-        end
-        
-        
-        %--------------------------------------------------------------------------
-        %The compatability condition for pressure equation
-        %--------------------------------------------------------------------------
-        
-        comp = ones(1,M);
-        L1 = [L1;comp];
-        comp = ones(1,M+1)';
-        L1 = [L1 comp];
-        L1(end,end) = 0;
-        
-        L1 = sparse(L1);
-        
-    end
-
- function [L1] = formLHSp2
-     
-        dim = [Nxg-5,Nyg-5];
-        M = dim(1)*dim(2);
-        Ix = speye(dim(1));
-        Iy = speye(dim(2));
-        e1 = ones(dim(1),1);
-        e2 = ones(dim(2),1);
-        
-        D1x = spdiags([-1/(12*hx^2)*e1 16/(12*hx^2)*e1 -30/(12*hx^2)*e1 16/(12*hx^2)*e1 -1/(12*hx^2)*e1]...
-            , [-2 -1 0 1 2], dim(1),dim(1));
-        D1x(1,dim(1)) = 16/(12*hx^2);
-        D1x(1,dim(1)-1) = -1/(12*hx^2);
-        D1x(2,dim(1)) = -1/(12*hx^2);
-
-        D1x(dim(1),1) = 16/(12*hx^2);
-        D1x(dim(1),2) = -1/(12*hx^2);
-        D1x(dim(1)-1,1) = -1/(12*hx^2);
-        
-        D1y = spdiags([-1/(12*hy^2)*e2 16/(12*hy^2)*e2 -30/(12*hy^2)*e2 16/(12*hy^2)*e2 -1/(12*hy^2)*e2]...
-            , [-2 -1 0 1 2], dim(2),dim(2));
-        
-        D1y(1,dim(2)) = 16/(12*hy^2);
-        D1y(1,dim(2)-1) = -1/(12*hy^2);
-        D1y(2,dim(2)) = -1/(12*hy^2);
-
-        D1y(dim(2),1) = 16/(12*hy^2);
-        D1y(dim(2),2) = -1/(12*hy^2);
-        D1y(dim(2)-1,1) = -1/(12*hy^2);
-
-        L1 = kron(D1x,Iy) + kron(Ix,D1y);        
-        %--------------------------------------------------------------------------
-        %The compatability condition for pressure equation
-        %--------------------------------------------------------------------------
-        
-        comp = ones(1,M);
-        L1 = [L1;comp];
-        comp = ones(1,M+1)';
-        L1 = [L1 comp];
-        L1(end,end) = 0;
-    end
-
-    function [L1] = formLHSp3
-        M  = (Nyg)*(Nxg);
-        %L1 = zeros(M,M);
-                L1 = spalloc(M,M,7*M);
-        
-        for ix = 1:2*Nyg
-            L1(ix,ix) = 1;
-        end
-        
-        for ix = 2*Nyg+1:M-2*Nyg
-            if mod(ix - 2*Nyg,Nyg) == 1
-                L1(ix,ix   ) = 1;
-            elseif mod(ix - 2*Nyg,Nyg) == 2
-                L1(ix,ix   ) = 1;
-            elseif mod(ix - 2*Nyg,Nyg) == 0
-                L1(ix,ix   ) = 1;
-            elseif mod(ix - 2*Nyg,Nyg) == Nyg-1
-                L1(ix,ix   ) = 1;
-            else
-                L1(ix,ix   ) =  -(30/(12*hy^2)+30/(12*hx^2));
-                
-                L1(ix,ix + 1) =  16/(12*hy^2);
-                L1(ix,ix - 1) =  16/(12*hy^2);
-                L1(ix,ix + 2) =    -1/(12*hy^2);
-                L1(ix,ix - 2) =    -1/(12*hy^2);
-                
-                L1(ix,ix + Nyg) =   16/(12*hx^2);
-                L1(ix,ix - Nyg) =   16/(12*hx^2);
-                L1(ix,ix + 2*Nyg) =   -1/(12*hx^2);
-                L1(ix,ix - 2*Nyg) =   -1/(12*hx^2);
-            end
-            
-        end
-        
-        for ix = M-2*Nyg+1:M
-            L1(ix,ix) = 1;
-        end
-
-    end
-
 
     function errorcalculation
         fprintf('at time %8.5f \n',t2)

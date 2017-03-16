@@ -1,4 +1,4 @@
-function [lhsU] = formLHS(fS)
+function [lhsU,lhsV] = formLHS(fS)
 
 % get info from INS class
 Nxg = fS.Nxg;

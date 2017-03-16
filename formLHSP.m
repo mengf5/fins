@@ -70,24 +70,20 @@ for axis = 0:1
             case 1
                 % Laplace(P) = ...
                 lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
-                lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
                 
             case 2
                 % Laplace(P) = ...
                 if side == 0
                     lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
-                    lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
                     
                 elseif side == 1
                     
                     lhsP  = setOne(lhsP,M,+1,bcPts,bcPts,lBcPts);
-                    lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
                     
                     matchSide = 0;
                     [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
                     
                     lhsP  = setOne(lhsP,M,-1,bcPts,matchPts,lMatchPts);
-                    lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
                     
                 end
                 
@@ -96,7 +92,6 @@ for axis = 0:1
                 % P = P(t)
                 pm    = 1;
                 lhsP  = setOne(lhsP,M,pm,bcPts,bcPts,lBcPts);
-                lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
                 
             case 4
                 
@@ -159,7 +154,6 @@ for axis = 0:1
                     
                     pm    = 1;
                     lhsP  = setOne(lhsP,M,pm,bcPts,bcPts,lBcPts);
-                    lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
                     
                 end
                 
