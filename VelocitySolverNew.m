@@ -462,8 +462,8 @@ for axis = 0:1
             
             case 1
                 % u = u(t)
-                U(I,J) = u(x(bcx),y(bcy),t2);
-                V(I,J) = v(x(bcx),y(bcy),t2);
+                U(I,J) = u(x(bcx,bcy),y(bcx,bcy),t2);
+                V(I,J) = v(x(bcx,bcy),y(bcx,bcy),t2);
                 
             case 2
                 % Laplace(U) = ...
@@ -511,19 +511,20 @@ for axis = 0:1
                 [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
                 
                 if axis == 0
-                    lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts);
+                    
+                    U(i,J) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
+                    V(i,J) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
                     
                 elseif axis == 1
-                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
-                    lhsV  = setDx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    
+                    
                     
                 end
                 
                 pos = 2;
                 
-                [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-                
+                [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+
                 if axis == 0
                     lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
                     lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
