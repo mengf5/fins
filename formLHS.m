@@ -191,6 +191,8 @@ end
 %left - right- bottom -top
 % point A is contaminated by the bottom boundary condition
 
+% now fix em corner points
+%----------------------------------------------------------------
 for sideX = 0:1
     for sideY = 0:1
         

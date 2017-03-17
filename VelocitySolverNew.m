@@ -105,8 +105,26 @@ maxgrad = 0;
 
 % fill in interior 
 %--------------------------------------------------------------------------
-i = ia+1:ib-1;
-j = ja+1:jb-1;
+iEnd   = ib-1;
+jEnd   = jb-1;
+iStart = ia+1;
+jStart = ja+1;
+
+% For periodic boundary condition,
+%one boundary line is considered as interior 
+
+for axis =0:1
+  side = 1;
+  localBC = BC(axis+1,side);
+  % on the boundary
+  if localBC == 2
+    iStart = iStart + (axis==0);
+    jStart = jStart + (axis==1);
+  end
+end
+
+i = iStart:iEnd;
+j = iStart:iEnd;
 
 % calculate artifitial dissipation
 %--------------------------------------------------------------------------
@@ -252,24 +270,24 @@ if tExplicit==1
   %--------------------------------------------------------------------------
     if tOrder==2
         
-        U(i,j) = timeint(1)*rhsuC...
+        rhsU(i,j) = timeint(1)*rhsuC...
             + timeint(2)*rhsuP1...
             + UC(i,j); %
         
-        V(i,j) = timeint(1)*rhsvC...
+        rhsV(i,j) = timeint(1)*rhsvC...
             + timeint(2)*rhsvP1...
             + VC(i,j);
         
         
     elseif tOrder==4
         if tMethod==1
-            U(i,j) = timeint(1)*rhsuC...
+            rhsU(i,j) = timeint(1)*rhsuC...
                 + timeint(2)*rhsuP1...
                 + timeint(3)*rhsuP2...
                 + timeint(4)*rhsuP3...
                 + UC(i,j); %
             
-            V(i,j) = timeint(1)*rhsvC...
+            rhsV(i,j) = timeint(1)*rhsvC...
                 + timeint(2)*rhsvP1...
                 + timeint(3)*rhsvP2...
                 + timeint(4)*rhsvP3...
@@ -277,7 +295,7 @@ if tExplicit==1
             
         elseif tMethod==2
             
-            U(i,j) = timeint(1)*rhsuC...
+            rhsU(i,j) = timeint(1)*rhsuC...
                 + timeint(2)*rhsuP1...
                 + timeint(3)*rhsuP2...
                 + timeint(4)*rhsuP3...
@@ -286,7 +304,7 @@ if tExplicit==1
                 +4/3*UP2(i,j) ...
                 -1/4*UP3(i,j)); %
             
-            V(i,j) = timeint(1)*rhsvC...
+            rhsV(i,j) = timeint(1)*rhsvC...
                 + timeint(2)*rhsvP1...
                 + timeint(3)*rhsvP2...
                 + timeint(4)*rhsvP3...
@@ -331,13 +349,13 @@ elseif tExplicit==0
             fyN = 0;
         end
         
-        U(i,j) = timeint(1)*rhsuC...
+        rhsU(i,j) = timeint(1)*rhsuC...
             + timeint(2)*rhsuP1...
             + UC(i,j)...
             + imTime(2)*rhsuImC ...
             + imTime(1)*fxN;
         
-        V(i,j) = timeint(1)*rhsvC...
+        rhsV(i,j) = timeint(1)*rhsvC...
             + timeint(2)*rhsvP1...
             + VC(i,j)...
             + imTime(2)*rhsvImC...
@@ -450,59 +468,67 @@ end
 
 % calculating boundary and ghost points
 
-for axis = 0:1
+
+if  tExplicit == 1
+% explicit time stepping
+%-----------------------------------------------------------------------------------
+  msg = 'boundary conditions for explicit time stepping method is under construction';
+  error(msg)
+			     
+  for axis = 0:1
     for side = 0:1
-        
-        localBC = BC(axis+1,side+1);
-        % on the boundary
-        pos = 0;
-        
-        [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-        
-        switch localBC
-            
-            case 1
-                % u = u(t)
-                U(I,J) = u(x(bcx,bcy),y(bcx,bcy),t2);
-                V(I,J) = v(x(bcx,bcy),y(bcx,bcy),t2);
+
+      localBC = BC(axis+1,side+1);
+      % on the boundary
+      pos = 0;
+      
+      [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+      
+      switch localBC
+	case 1
+
+      end
+      
+    end
+  end
+
+elseif tExplicit == 0
+% implicit time stepping 
+%-----------------------------------------------------------------------------------
+  for axis = 0:1
+    for side = 0:1
+      
+      localBC = BC(axis+1,side+1);
+      % on the boundary
+      pos = 0;
+      
+      [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+      
+      switch localBC
+             
+        case 1
+	  % u = u(t)
+          rhsU(bcx,bcy) = u(x(bcx,bcy),y(bcx,bcy),t2);
+          rhsV(bcx,bcy) = v(x(bcx,bcy),y(bcx,bcy),t2);
+          
+        case 2
+          
+        case 3
                 
-            case 2
-                % Laplace(U) = ...
-                if side == 0
-                    lhsU  = setLaplacian(lhsU,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
-                    lhsV  = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
-                    
-                elseif side == 1
-                    
-                    %[bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-                    
-                    lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
-                    lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
-                    
-                    matchSide = 0;
-                    [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
-                    
-                    lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
-                    lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
-                    
-                end
-                
-            case 3
-                
-                % u = u(t)
-                pm    = 1;
-                lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
-                lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
-                
-            case 4
-                
-            case 5
-                
-        end
+        % u = u(t)
+          pm    = 1;
+          lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
+          lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+          
+        case 4
+          
+        case 5
+          
+      end
         
         % on the ghost lines
         
-        switch localBC
+      switch localBC
             
             case 1
                 
@@ -513,11 +539,10 @@ for axis = 0:1
                 
                 if axis == 0
                     
-                    U(i,J) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
-                    V(i,J) = getCompVxx(x(bcx,bcy),y(bcx,bcy),t2);
+                  U(bcx,bcy) = -dvdy(x(bcx,bcy),y(bcx,bcy),t2);
+                  V(bcx,bcy) = getCompUxx(x(bcx,bcy),y(bcx,bcy),t2);
                     
                 elseif axis == 1
-                    
                     
                     
                 end
@@ -527,7 +552,7 @@ for axis = 0:1
                 [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
 
                 if axis == 0
-                    lhsU  = setDxxx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
+                    lhsU  = approximateDudx3(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
                     lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
                     
                 elseif axis == 1
@@ -576,634 +601,121 @@ for axis = 0:1
 end
 
 
+end
 
-% boundary points
-if tExplicit == 1
-    switch BC
-        case 1
-            i = 3;
-            U(i,:) = u(x(i,1),y(i,:),t2);
-            V(i,:) = v(x(i,1),y(i,:),t2);
+% now fix em corner points
+%----------------------------------------------------------------
+for sideX = 0:1
+    for sideY = 0:1
+        
+        px = (sideX==0)*ia + (sideX==1)*ib;
+        py = (sideY==0)*ja + (sideY==1)*jb;
+        
+        px1 = px - (-1)^sideX * 1;
+        py1 = py - (-1)^sideY * 1;
+        
+        px2 = px - (-1)^sideX * 2;
+        py2 = py - (-1)^sideY * 1;
+        
+        px3 = px - (-1)^sideX * 1;
+        py3 = py - (-1)^sideY * 2;
+        
+        px4 = px - (-1)^sideX * 2;
+        py4 = py - (-1)^sideY * 2;
+        
+        px1Index = getIndex(fS,px1,px1,py1,py1);
+        px2Index = getIndex(fS,px2,px2,py2,py2);
+        px3Index = getIndex(fS,px3,px3,py3,py3);
+        px4Index = getIndex(fS,px4,px4,py4,py4);
+        
+        switch localBC
             
-            i = Nxg-2;
-            U(i,:) = u(x(i,1),y(i,:),t2);
-            V(i,:) = v(x(i,1),y(i,:),t2);
-            
-            j = 3;
-            U(:,j) = u(x(:,j),y(1,j),t2);
-            V(:,j) = v(x(:,j),y(1,j),t2);
-            
-            j = Nyg-2;
-            U(:,j) = u(x(:,j),y(1,j),t2);
-            V(:,j) = v(x(:,j),y(1,j),t2);
-            %x-ghost points
-            
-            for k = 1:2
-                %ghost v
-                i = bcp(1,k); %3; Nxg-2
-                j = 4:Nyg - 3;
-                index = (-1)^(k-1);
-                Vx(:,j) = V(i+index*(1:4),j);
-                Ux(:,j) = U(i+index*(1:4),j);
+            case 1
                 
-                gradbcx = 1/4*( ...
-                    2*abs((-U(i,j+2) + 8*U(i,j+1) - 8*U(i,j-1) + U(i,j-2))/(12*hy))+...
-                    abs((-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy))+ ...
-                    abs((-3*V(i,j) + 4*Vx(1,j) - Vx(2,j))/(2*hx)));
-                
-                lapvbc = (V(i,j+2) -4*V(i,j+1) +6*V(i,j) -4*V(i,j-1)+V(i,j-2));
-                d4vbc(i,j) = -(ad41+gradbcx*ad42);
-                d2vbc(i,j) =  (ad21+gradbcx*ad22);
-                
-                patch11 = mu/hx^2 * eye(length(4:Nyg - 3)) + diag(d4vbc(i,j))*(-4) + diag(d2vbc(i,j));
-                %patch11 = eye(length(4:Nyg - 3));    % !!!!!
-                patch12 = diag(d4vbc(i,j));
-                patch21 = -6*eye(length(4:Nyg - 3));
-                patch22 =    eye(length(4:Nyg - 3));
-                
-                AVbc = [patch11 patch12;patch21 patch22];
-                
-                if count == 1
+                for i = 1:3
+                    px1E(i) = px1 + (-1)^(sideX)*i;
+                    py1E(i) = py1 + (-1)^(sideY)*i;
                     
-                    %if tOrder==2
-                    dpdyt = + 3*(PC(i,j+1) - PC(i,j-1))/(2*hy) ...
-                        - 3*(PP1(i,j+1) - PP1(i,j-1))/(2*hy) ...
-                        +   (PP2(i,j+1) - PP2(i,j-1))/(2*hy);
-                    %
-                    dpdya = ((((PC(i,j+1) - PC(i,j-1))/(2*hy)  ...
-                        - (PP1(i,j+1) - PP1(i,j-1))/(2*hy))/dt ...
-                        - ((PP1(i,j+1) - PP1(i,j-1))/(2*hy) ...
-                        - (PP2(i,j+1) - PP2(i,j-1))/(2*hy))/dte) ...
-                        * (dtn+dt)/(dt+dte) ...
-                        + ((PC(i,j+1) - PC(i,j-1))/(2*hy)  ...
-                        - (PP1(i,j+1) - PP1(i,j-1))/(2*hy))/dt)*dtn ...
-                        + (PC(i,j+1) - PC(i,j-1))/(2*hy);
-                    %                 elseif tOrder==4
-                    %
-                    %                     dpdya = + 5*(PC(i,j+1) - PC(i,j-1))/(2*hy) ...
-                    %                         - 10*(PP1(i,j+1) - PP1(i,j-1))/(2*hy) ...
-                    %                         + 10*(PP2(i,j+1) - PP2(i,j-1))/(2*hy) ...
-                    %                         - 5*(PP3(i,j+1) - PP3(i,j-1))/(2*hy) ...
-                    %                         + 1*(PP4(i,j+1) - PP4(i,j-1))/(2*hy);
+                    px2E(i) = px2 + (-1)^(sideX)*i*(2);
+                    py2E(i) = py2 + (-1)^(sideY)*i;
                     
-                    %end
+                    px3E(i) = px3 + (-1)^(sideX)*i;
+                    py3E(i) = py3 + (-1)^(sideY)*i*(2);
                     
-                    %dpdya = dpdy(x(i,j),y(i,j),t2);
-                else
-                    dpdya = (PN(i,j+1) - PN(i,j-1))/(2*hy);
-                    %dpdya = dpdy(x(i,j),y(i,j),t2);
+                    px4E(i) = px4 + (-1)^(sideX)*i*(2);
+                    py4E(i) = py4 + (-1)^(sideY)*i*(2);
                 end
                 
-                bVbc1 = dvdt(x(i,j),y(i,j),t2) - beta*g*(tem(x(i,j),y(i,j),t2)-tref) ...
-                    - fy(x(i,j),y(i,j),t2) ... - d4vbc(i,j).*(Vx(2,j) -4*Vx(1,j) +6*V(i,j)) ...
-                    - d4vbc(i,j).*lapvbc ...
-                    + u(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2)...
-                    + V(i,j).*(V(i,j+1) - V(i,j-1))/(2*hy)...
-                    - (mu).*(V(i,j+1) -2*V(i,j) + V(i,j-1))/(hy^2)...
-                    - d2vbc(i,j).*(V(i,j+1) -2*V(i,j) + V(i,j-1))...
-                    + dpdya ...
-                    - (mu).*(Vx(1,j)-2*V(i,j))/hx^2 ...
-                    - d2vbc(i,j).*(Vx(1,j)-2*V(i,j));
-                
-                %bVbc1 = -(Vx(1,j)-2*V(i,j)); %!!!!!
+                coeff=[1,-15/4,3,-1/4];
                 
                 
-                bVbc1 = bVbc1 - d4vbc(i,j).*(Vx(2,j) - 4*Vx(1,j) + 6*V(i,j));
+            case 2
+                
+                px1E = px1 + (-1)^sideX*(Nx - 1);
+                py1E = py1 ;
+                
+                px2E = px2 + (-1)^sideX*(Nx - 1);
+                py2E = py2 ;
+                
+                px3E = px3 + (-1)^sideX*(Nx - 1);
+                py3E = py3 ;
+                
+                px4E = px4 + (-1)^sideX*(Nx - 1);
+                py4E = py4 ;
+                
+                coeff=[1,-1];
                 
                 
-                bVbc2 = -(+15*V(i,j)-20*Vx(1,j) + 15*Vx(2,j) -6*Vx(3,j) + Vx(4,j));
-                bVbc = [bVbc1 bVbc2];
+            case 3
                 
-                vtemp = AVbc\bVbc';
+                px1E=[];
+                px2E=[];
+                px3E=[];
+                px4E=[];
                 
-                V(i-index*(1),j) = vtemp(1:length(4:Nyg - 3));
-                V(i-index*(2),j) = vtemp(length(4:Nyg - 3)+1:end);
+                py1E=[];
+                py2E=[];
+                py3E=[];
+                py4E=[];
                 
-                V(i-index*(1),2) = v(x(i-index*(1),2),y(i-index*(1),2),t2);
-                V(i-index*(2),2) = v(x(i-index*(2),2),y(i-index*(2),2),t2);
-                V(i-index*(1),Nyg-1) = v(x(i-index*(1),Nyg-1),y(i-index*(1),Nyg-1),t2);
-                V(i-index*(2),Nyg-1) = v(x(i-index*(2),Nyg-1),y(i-index*(2),Nyg-1),t2);
-                %ghost u
-                A = [16 -1;index*(-8) index*(1)];
-                
-                for  j = 5:Nyg - 4;
-                    
-                    rhs = -(-V(i+2,j+2) + 8*V(i+1,j+2) - 8*V(i-1,j+2) + V(i-2,j+2)) ...
-                        +8*(-V(i+2,j+1) + 8*V(i+1,j+1) - 8*V(i-1,j+1) + V(i-2,j+1)) ...
-                        -8*(-V(i+2,j-1) + 8*V(i+1,j-1) - 8*V(i-1,j-1) + V(i-2,j-1)) ...
-                        + (-V(i+2,j-2) + 8*V(i+1,j-2) - 8*V(i-1,j-2) + V(i-2,j-2));
-                    
-                    b(1) = -rhs/(12*hx*12*hy)*12*hx^2 - (-Ux(2,j) + 16*Ux(1,j) -30*U(i,j));
-                    
-                    b(2) = -(-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy)*12*hx...
-                        - index*(-Ux(2,j) + 8*Ux(1,j));
-                    x1 = A\b';
-                    U(i-index*(1),j) = x1(1);
-                    U(i-index*(2),j) = x1(2);
-                end
-            end
-            
-            % ghost points in y direction
-            for k = 1:2
-                %ghost v
-                j = bcp(2,k);%3; Nyg-2
-                i = 4:Nxg-3;
-                index = (-1)^(k-1);
-                Vy(i,:) = V(i,j+index*(1:4));
-                Uy(i,:) = U(i,j+index*(1:4));
-                
-                gradbcy = 0.25*(2*abs((-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)) + ...
-                    abs((-3*U(i,j) + 4*Uy(i,1) - Uy(i,2))/(2*hy))+...
-                    abs((-V(i+2,j) + 8*V(i+1,j) - 8*V(i-1,j) + V(i-2,j))/(12*hx)));
-                
-                lapubc = U(i+2,j) -4*U(i+1,j) +6*U(i,j) -4*U(i-1,j)+U(i-2,j);
-                
-                d4ubc(i,j) = -(ad41+gradbcy*ad42);
-                d2ubc(i,j) =  (ad21+gradbcy*ad22);
+                coeff=1;
                 
                 
-                patch11 = mu/hy^2 * eye(length(4:Nyg - 3)) + diag(d4ubc(i,j))*(-4) + diag(d2ubc(i,j));
-                %patch11 = eye(length(4:Nyg - 3)) ;%!!!!!!
-                patch12 = diag(d4ubc(i,j));
-                patch21 = -6*eye(length(4:Nyg - 3));
-                patch22 =    eye(length(4:Nyg - 3));
                 
-                AUbc = [patch11 patch12;patch21 patch22];
-                
-                if count == 1
-                    % if tOrder==2
-                    %                 dpdx = - 3*(-(P1(i+1,j) - P1(i-1,j)))/(2*hx) ...
-                    %                     + 3*(-(P0(i+1,j) - P0(i-1,j)))/(2*hx) ...
-                    %                     -   (-(Pextr(i+1,j) - Pextr(i-1,j)))/(2*hx);
-                    %
-                    dpdxa = ((((PC(i+1,j) - PC(i-1,j))/(2*hx)  ...
-                        - (PP1(i+1,j) - PP1(i-1,j))/(2*hx))/dt ...
-                        - ((PP1(i+1,j) - PP1(i-1,j))/(2*hx) ...
-                        - (PP2(i+1,j) - PP2(i-1,j))/(2*hx))/dte) ...
-                        * (dtn+dt)/(dt+dte) ...
-                        + ((PC(i+1,j) - PC(i-1,j))/(2*hx)  ...
-                        - (PP1(i+1,j) - PP1(i-1,j))/(2*hx))/dt)*dtn ...
-                        + (PC(i+1,j) - PC(i-1,j))/(2*hx);
-                    
-                    %dpdxa = dpdx(x(i,j),y(i,j),t2);
-                    
-                    %                 elseif tOrder==4
-                    %
-                    %                     dpdxa = + 5*(PC(i+1,j) - PC(i-1,j))/(2*hx) ...
-                    %                         - 10*(PP1(i+1,j) - PP1(i-1,j))/(2*hx) ...
-                    %                         + 10*(PP2(i+1,j) - PP2(i-1,j))/(2*hx) ...
-                    %                         - 5*(PP3(i+1,j) - PP3(i-1,j))/(2*hx) ...
-                    %                         + 1*(PP4(i+1,j) - PP4(i-1,j))/(2*hx);
-                    
-                    % end
-                    
-                else
-                    dpdxa = (PN(i+1,j) - PN(i-1,j))/(2*hx);
-                    %                  dpdxa = dpdx(x(i,j),y(i,j),t2);
-                end
-                
-                
-                bUbc1 = dudt(x(i,j),y(i,j),t2) ...
-                    - fx(x(i,j),y(i,j),t2) ...- d4ubc(i,j).*(Uy(i,2) -4*Uy(i,1) +6*U(i,j)) ...
-                    - d4ubc(i,j).*lapubc ...
-                    + v(x(i,j),y(i,j),t2).*dudy(x(i,j),y(i,j),t2) ...
-                    + U(i,j).*(U(i+1,j) - U(i-1,j))/(2*hx) ...
-                    + dpdxa ...
-                    - mu*(U(i+1,j) -2*U(i,j) + U(i-1,j))/(hx^2)...
-                    - d2ubc(i,j).*(U(i+1,j) -2*U(i,j) + U(i-1,j))...
-                    - mu*(Uy(i,1)-2*U(i,j))/hy^2 ...
-                    - d2ubc(i,j).*(Uy(i,1)-2*U(i,j));
-                %bUbc1 = - (Uy(i,1)-2*U(i,j)); %!!!!
-                
-                
-                bUbc1 = bUbc1 - d4ubc(i,j).*(Uy(i,2) -4*Uy(i,1) +6*U(i,j));
-                
-                bUbc2 = -(+15*U(i,j)-20*Uy(i,1) + 15*Uy(i,2) -6*Uy(i,3) + Uy(i,4));
-                bUbc = [bUbc1' bUbc2'];
-                
-                utemp = AUbc\bUbc';
-                U(i,j-index*(1)) = utemp(1:length(4:Nyg - 3));
-                U(i,j-index*(2)) = utemp(length(4:Nyg - 3)+1:end);
-                
-                
-                % fill in corners that needed in the corss derivative
-                U(2,j-index*(1)) = u(x(2,j-index*(1)),y(2,j-index*(1)),t2);
-                U(2,j-index*(2)) = u(x(2,j-index*(2)),y(2,j-index*(2)),t2);
-                U(Nxg-1,j-index*(1)) = u(x(Nxg-1,j-index*(1)),y(Nxg-1,j-index*(1)),t2);
-                U(Nxg-1,j-index*(2)) = u(x(Nxg-1,j-index*(2)),y(Nxg-1,j-index*(2)),t2);
-                
-                A = [16 -1;index*(-8) index*1];
-                for  i = 5:Nxg - 4;
-                    
-                    rhs = -(-U(i+2,j+2) + 8*U(i+1,j+2) - 8*U(i-1,j+2) + U(i-2,j+2)) ...
-                        +8*(-U(i+2,j+1) + 8*U(i+1,j+1) - 8*U(i-1,j+1) + U(i-2,j+1)) ...
-                        -8*(-U(i+2,j-1) + 8*U(i+1,j-1) - 8*U(i-1,j-1) + U(i-2,j-1)) ...
-                        + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2));
-                    
-                    b(1) = -rhs/(12*hx*12*hy)*12*hy^2 - (-Vy(i,2) + 16*Vy(i,1) -30*V(i,j));
-                    b(2) = -(-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)*12*hy...
-                        - index*(-Vy(i,2) + 8*Vy(i,1));
-                    x1 = A\b';
-                    V(i,j-index*(1)) = x1(1);
-                    V(i,j-index*(2)) = x1(2);
-                end
-                
-            end
-            %% Calculate 'corner' ghost points
-            %lower left corner
-            A = [16 -1 8/(12*hx*12*hy)*12*hx^2 0;-8 1 0 0; ...
-                8/(12*hx*12*hy)*12*hy^2 0 16 -1;0 0 -8 1];
-            
-            i =3;
-            j =4;
-            rhs = -(-V(i+2,j+2) + 8*V(i+1,j+2) - 8*V(i-1,j+2) + V(i-2,j+2)) ...
-                +8*(-V(i+2,j+1) + 8*V(i+1,j+1) - 8*V(i-1,j+1) + V(i-2,j+1)) ...
-                -8*(-V(i+2,j-1) + 8*V(i+1,j-1) - 8*V(i-1,j-1) + V(i-2,j-1)) ...
-                + (-V(i+2,j-2) - 8*V(i-1,j-2) + V(i-2,j-2));
-            
-            bc(1) = -rhs/(12*hx*12*hy)*12*hx^2 - (-U(i+2,j) + 16*U(i+1,j) -30*U(i,j));
-            bc(2) = -(-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy)*12*hx...
-                - (-U(i+2,j) + 8*U(i+1,j));
-            
-            j = 3;
-            i = 4;
-            rhs = -(-U(i+2,j+2) + 8*U(i+1,j+2) - 8*U(i-1,j+2) + U(i-2,j+2)) ...
-                +8*(-U(i+2,j+1) + 8*U(i+1,j+1) - 8*U(i-1,j+1) ) ...
-                -8*(-U(i+2,j-1) + 8*U(i+1,j-1) - 8*U(i-1,j-1) + U(i-2,j-1)) ...
-                + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2));
-            
-            bc(3) = -rhs/(12*hx*12*hy)*12*hy^2 - (-V(i,j+2) + 16*V(i,j+1) -30*V(i,j));
-            bc(4) = -(-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)*12*hy...
-                - (-V(i,j+2) + 8*V(i,j+1));
-            
-            x1 = A\bc';
-            
-            V(i,j-1) = x1(3);
-            V(i,j-2) = x1(4);
-            i =3;
-            j =4;
-            U(i-1,j) = x1(1);
-            U(i-2,j) = x1(2);
-            
-            %upper left corner
-            
-            A = [16 -1 -8/(12*hx*12*hy)*12*hx^2 0;-8 1 0 0; ...
-                -8/(12*hx*12*hy)*12*hy^2 0 16 -1;0 0 8 -1];
-            
-            %         A = [16 -1 0 0;-8 1 0 0; ...
-            %             0 0 16 -1;0 0 8 -1];
-            
-            i = 3;
-            j = Nyg-3;
-            %         V2(i+1,j+2) = v(x(i+1,j+2),y(i+1,j+2),t2);
-            rhs = -(-V(i+2,j+2)  - 8*V(i-1,j+2) + V(i-2,j+2)) ...
-                +8*(-V(i+2,j+1) + 8*V(i+1,j+1) - 8*V(i-1,j+1) + V(i-2,j+1)) ...
-                -8*(-V(i+2,j-1) + 8*V(i+1,j-1) - 8*V(i-1,j-1) + V(i-2,j-1)) ...
-                + (-V(i+2,j-2) +8*V(i+1,j-2)- 8*V(i-1,j-2) + V(i-2,j-2));
-            
-            bc(1) = -rhs/(12*hx*12*hy)*12*hx^2 - (-U(i+2,j) + 16*U(i+1,j) -30*U(i,j));
-            bc(2) = -(-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy)*12*hx...
-                - (-U(i+2,j) + 8*U(i+1,j));
-            
-            j = Nyg-2;
-            i = 4;
-            %         U2(i-2,j-1) = u(x(i-2,j-1),y(i-2,j-1),t2);
-            rhs = -(-U(i+2,j+2) + 8*U(i+1,j+2) - 8*U(i-1,j+2) + U(i-2,j+2)) ...
-                +8*(-U(i+2,j+1) + 8*U(i+1,j+1) - 8*U(i-1,j+1) + U(i-2,j+1)) ...
-                -8*(-U(i+2,j-1) + 8*U(i+1,j-1) - 8*U(i-1,j-1) ) ...
-                + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2));
-            
-            bc(3) = -rhs/(12*hx*12*hy)*12*hy^2 - (-V(i,j-2) + 16*V(i,j-1) -30*V(i,j));
-            bc(4) = -(-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)*12*hy...
-                - (-8*V(i,j-1) + V(i,j-2));
-            
-            x1 = A\bc';
-            
-            V(i,j+1) = x1(3);
-            V(i,j+2) = x1(4);
-            
-            i =3;
-            j =Nyg-3;
-            U(i-1,j) = x1(1);
-            U(i-2,j) = x1(2);
-            
-            
-            %uper right corner
-            
-            A = [16 -1 8/(12*hx*12*hy)*12*hx^2 0;8 -1 0 0; ...
-                8/(12*hx*12*hy)*12*hy^2 0 16 -1;0 0 8 -1];
-            
-            %         A = [16 -1 0 0;-8 1 0 0; ...
-            %             0 0 16 -1;0 0 8 -1];
-            
-            i = Nxg-2;
-            j = Nyg-3;
-            %         V2(i+1,j+2) = v(x(i+1,j+2),y(i+1,j+2),t2);
-            rhs = -(-V(i+2,j+2) + 8*V(i+1,j+2)  + V(i-2,j+2)) ...
-                +8*(-V(i+2,j+1) + 8*V(i+1,j+1) - 8*V(i-1,j+1) + V(i-2,j+1)) ...
-                -8*(-V(i+2,j-1) + 8*V(i+1,j-1) - 8*V(i-1,j-1) + V(i-2,j-1)) ...
-                + (-V(i+2,j-2) +8*V(i+1,j-2)- 8*V(i-1,j-2) + V(i-2,j-2));
-            
-            bc(1) = -rhs/(12*hx*12*hy)*12*hx^2 - (-U(i-2,j) + 16*U(i-1,j) -30*U(i,j));
-            bc(2) = -(-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy)*12*hx...
-                - (-8*U(i-1,j) + U(i-2,j));
-            
-            j = Nyg-2;
-            i = Nxg-3;
-            %         U2(i-2,j-1) = u(x(i-2,j-1),y(i-2,j-1),t2);
-            rhs = -(-U(i+2,j+2) + 8*U(i+1,j+2) - 8*U(i-1,j+2) + U(i-2,j+2)) ...
-                +8*(-U(i+2,j+1) + 8*U(i+1,j+1) - 8*U(i-1,j+1) + U(i-2,j+1)) ...
-                -8*( + 8*U(i+1,j-1) - 8*U(i-1,j-1) + U(i-2,j-1)) ...
-                + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2));
-            
-            bc(3) = -rhs/(12*hx*12*hy)*12*hy^2 - (-V(i,j-2) + 16*V(i,j-1) -30*V(i,j));
-            bc(4) = -(-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)*12*hy...
-                - (-8*V(i,j-1) + V(i,j-2));
-            
-            x1 = A\bc';
-            
-            V(i,j+1) = x1(3);
-            V(i,j+2) = x1(4);
-            
-            i = Nxg-2;
-            j =Nyg-3;
-            U(i+1,j) = x1(1);
-            U(i+2,j) = x1(2);
-            
-            
-            %lower right corner
-            
-            A = [16 -1 -8/(12*hx*12*hy)*12*hx^2 0;8 -1 0 0; ...
-                -8/(12*hx*12*hy)*12*hy^2 0 16 -1;0 0 -8 1];
-            
-            %         A = [16 -1 0 0;-8 1 0 0; ...
-            %             0 0 16 -1;0 0 8 -1];
-            
-            i = Nxg-2;
-            j = 4;
-            %         V2(i+1,j+2) = v(x(i+1,j+2),y(i+1,j+2),t2);
-            rhs = -(-V(i+2,j+2) + 8*V(i+1,j+2) - 8*V(i-1,j+2) + V(i-2,j+2)) ...
-                +8*(-V(i+2,j+1) + 8*V(i+1,j+1) - 8*V(i-1,j+1) + V(i-2,j+1)) ...
-                -8*(-V(i+2,j-1) + 8*V(i+1,j-1) - 8*V(i-1,j-1) + V(i-2,j-1)) ...
-                + (-V(i+2,j-2) +8*V(i+1,j-2) + V(i-2,j-2));
-            
-            bc(1) = -rhs/(12*hx*12*hy)*12*hx^2 - (-U(i-2,j) + 16*U(i-1,j) -30*U(i,j));
-            bc(2) = -(-V(i,j+2) + 8*V(i,j+1) - 8*V(i,j-1) + V(i,j-2))/(12*hy)*12*hx...
-                - (-8*U(i-1,j) + U(i-2,j));
-            
-            j = 3;
-            i = Nxg-3;
-            %         U2(i-2,j-1) = u(x(i-2,j-1),y(i-2,j-1),t2);
-            rhs = -(-U(i+2,j+2) + 8*U(i+1,j+2) - 8*U(i-1,j+2) + U(i-2,j+2)) ...
-                +8*( + 8*U(i+1,j+1) - 8*U(i-1,j+1) + U(i-2,j+1)) ...
-                -8*(-U(i+2,j-1) + 8*U(i+1,j-1) - 8*U(i-1,j-1) + U(i-2,j-1)) ...
-                + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2));
-            
-            bc(3) = -rhs/(12*hx*12*hy)*12*hy^2 - (-V(i,j+2) + 16*V(i,j+1) -30*V(i,j));
-            bc(4) = -(-U(i+2,j) + 8*U(i+1,j) - 8*U(i-1,j) + U(i-2,j))/(12*hx)*12*hy...
-                - (-V(i,j+2) + 8*V(i,j+1));
-            
-            x1 = A\bc';
-            
-            V(i,j-1) = x1(3);
-            V(i,j-2) = x1(4);
-            
-            i = Nxg-2;
-            j =4;
-            U(i+1,j) = x1(1);
-            U(i+2,j) = x1(2);
-            
-        case 2
-            
-            V(bcp(1,2),:) = V(bcp(1,1),:);
-            U(bcp(1,2),:) = U(bcp(1,1),:);
-            V(:,bcp(2,2)) = V(:,bcp(2,1));
-            U(:,bcp(2,2)) = U(:,bcp(2,1));
-            
-            V(bcp(1,1)-1,:) = V(bcp(1,2)-1,:);
-            V(bcp(1,1)-2,:) = V(bcp(1,2)-2,:);
-            V(bcp(1,2)+1,:) = V(bcp(1,1)+1,:);
-            V(bcp(1,2)+2,:) = V(bcp(1,1)+2,:);
-            
-            U(bcp(1,1)-1,:) = U(bcp(1,2)-1,:);
-            U(bcp(1,1)-2,:) = U(bcp(1,2)-2,:);
-            U(bcp(1,2)+1,:) = U(bcp(1,1)+1,:);
-            U(bcp(1,2)+2,:) = U(bcp(1,1)+2,:);
-            
-            V(:,bcp(2,1)-1) = V(:,bcp(2,2)-1);
-            V(:,bcp(2,1)-2) = V(:,bcp(2,2)-2);
-            V(:,bcp(2,2)+1) = V(:,bcp(2,1)+1);
-            V(:,bcp(2,2)+2) = V(:,bcp(2,1)+2);
-            
-            U(:,bcp(2,1)-1) = U(:,bcp(2,2)-1);
-            U(:,bcp(2,1)-2) = U(:,bcp(2,2)-2);
-            U(:,bcp(2,2)+1) = U(:,bcp(2,1)+1);
-            U(:,bcp(2,2)+2) = U(:,bcp(2,1)+2);
-            
-        case 3
-            
-            i = 1:3;
-            U(i,:) = u(x(i,:),y(i,:),t2);
-            V(i,:) = v(x(i,:),y(i,:),t2);
-            
-            i = Nxg-2:Nxg;
-            U(i,:) = u(x(i,:),y(i,:),t2);
-            V(i,:) = v(x(i,:),y(i,:),t2);
-            
-            j = 1:3;
-            U(:,j) = u(x(:,j),y(:,j),t2);
-            V(:,j) = v(x(:,j),y(:,j),t2);
-            
-            j = Nyg-2:Nyg;
-            U(:,j) = u(x(:,j),y(:,j),t2);
-            V(:,j) = v(x(:,j),y(:,j),t2);
-            
-            
-    end
-    
-    %fill the other corner points
-    i = 1:2;
-    j = 1:2;
-    U(i,j) =u(x(i,j),y(i,j),t2);
-    V(i,j) =v(x(i,j),y(i,j),t2);
-    j = Nyg-1:Nyg;
-    U(i,j) =u(x(i,j),y(i,j),t2);
-    V(i,j) =v(x(i,j),y(i,j),t2);
-    i = Nxg-1:Nxg;
-    j = 1:2;
-    U(i,j) =u(x(i,j),y(i,j),t2);
-    V(i,j) =v(x(i,j),y(i,j),t2);
-    j = Nyg-1:Nyg;
-    U(i,j) =u(x(i,j),y(i,j),t2);
-    V(i,j) =v(x(i,j),y(i,j),t2);
-    
-elseif tExplicit==0
-    if BC == 4
-        J  = 1:Nyg;
-        for i = 1:3
-            U(i,J) =u(x(i,J),y(i,J),t2);
-            V(i,J) =v(x(i,J),y(i,J),t2);
-        end
-    
-        for i = Nxg-2:Nxg
-            U(i,J) =u(x(i,J),y(i,J),t2);
-            V(i,J) =v(x(i,J),y(i,J),t2);
-        end
-    
-        I  = 1:Nxg;
-        for j = 1:3
-            U(I,j) =u(x(I,j),y(I,j),t2);
-            V(I,j) =v(x(I,j),y(I,j),t2);
         end
         
-        for j = Nyg-2:Nyg
-            U(I,j) =u(x(I,j),y(I,j),t2);
-            V(I,j) =v(x(I,j),y(I,j),t2);
-        end
+        px1 = [px1,px1E];
+        px2 = [px2,px2E];
+        px3 = [px3,px3E];
+        px4 = [px4,px4E];
         
-        dir=0;
-        U = solveIm(Nxg,Nyg,U,dir,directSolve);
+        py1 = [py1,py1E];
+        py2 = [py2,py2E];
+        py3 = [py3,py3E];
+        py4 = [py4,py4E];
         
-        dir=1;
-        V = solveIm(Nxg,Nyg,V,dir,directSolve);
-        
-    elseif BC == 2
-         
-        dir=0;
-        U = solveIm(Nxg,Nyg,U,dir,directSolve);
-        
-        dir=1;
-        V = solveIm(Nxg,Nyg,V,dir,directSolve);
-        
-    elseif BC == 1 || BC == 6
-        
-        if fS.uvSwitch == 1  % switch solve u first then correct with v
-            preIndex     = 1;
-            correctIndex = 1;
-        elseif fS.uvSwitch == 0 % dont switch solve u first 
-            preIndex     = 100;
-            correctIndex = 100;
+        for i = 1:length(px1)
+            p1Index = getIndex(fS,px1(i),px1(i),py1(i),py1(i));
+            p2Index = getIndex(fS,px2(i),px2(i),py2(i),py2(i));
+            p3Index = getIndex(fS,px3(i),px3(i),py3(i),py3(i));
+            p4Index = getIndex(fS,px4(i),px4(i),py4(i),py4(i));
             
-        elseif fS.uvSwitch == 2 % dont switch solve v first
-            preIndex     = 0;
-            correctIndex = 0;
+            lhsU    = lhsU + sparse(px1Index,p1Index,coeff(i),M,M);
+            lhsU    = lhsU + sparse(px2Index,p2Index,coeff(i),M,M);
+            lhsU    = lhsU + sparse(px3Index,p3Index,coeff(i),M,M);
+            lhsU    = lhsU + sparse(px4Index,p4Index,coeff(i),M,M);
             
-        end
-        
-        %if BC == 1
-        if count <= preIndex
-            U = solveGhostU(fS,BC,Nxg,Nyg,t2,u,v,x,y,hx,hy,dt,dte,dtn,...
-                U,...
-                VN,VC,VP1,VP2,...
-                PN,PC,PP1,PP2,...
-                count,tOrder);
-            
-            if BC == 1
-                
-                dir=0;
-                U = solveIm(Nxg,Nyg,U,dir,directSolve);
-                
-            elseif BC == 6
-                
-                i = 1;
-                J = 1:Nyg;
-                U(i,J) = 0;
-                
-                i = 2;
-                U(i,J) = 0;
-                
-                for i = Nxg-2:Nxg
-                    U(i,J) = 0;
-                end
-                
-                dir=0;
-                U = solveIm(Nxg,Nyg,U,dir,directSolve);
-            end
-            
-            
-            V = solveGhostV(V,U,UC,UP1,UP2);
-            
-            if BC == 1
-                
-                dir=1;
-                V = solveIm(Nxg,Nyg,V,dir,directSolve);
-                
-            elseif BC == 6
-                
-                i = 1;
-                J = 1:Nyg;
-                V(i,J) = 0;
-                
-                i = 2;
-                V(i,J) = 0;
-                
-                for i = Nxg-2:Nxg
-                    V(i,J) = 0;
-                end
-                
-                dir=1;
-                V = solveIm(Nxg,Nyg,V,dir,directSolve);
-                
-                
-            end
-            
-        elseif count > correctIndex
-            
-            V = solveGhostV(V,UN,UC,UP1,UP2);
-            
-            if BC == 1
-                
-                dir=1;
-                V = solveIm(Nxg,Nyg,V,dir,directSolve);
-                
-            elseif BC == 6
-                
-                i = 1;
-                J = 1:Nyg;
-                V(i,J) = 0;
-                
-                i = 2;
-                V(i,J) = 0;
-                
-                for i = Nxg-2:Nxg
-                    V(i,J) = 0;
-                end
-                
-                dir=1;
-                V = solveIm(Nxg,Nyg,V,dir,directSolve);
-                
-            end
-            
-            U = solveGhostU(fS,BC,Nxg,Nyg,t2,u,v,x,y,hx,hy,dt,dte,dtn,...
-                U,...
-                V,VC,VP1,VP2,...
-                PN,PC,PP1,PP2,...
-                count,tOrder);
-            
-            if BC == 1
-                
-                dir=0;
-                U = solveIm(Nxg,Nyg,U,dir,directSolve);
-                
-            elseif BC == 6
-                
-                i = 1;
-                J = 1:Nyg;
-                U(i,J) = 0;
-                
-                i = 2;
-                U(i,J) = 0;
-                
-                for i = Nxg-2:Nxg
-                    U(i,J) = 0;
-                end
-                
-                dir=0;
-                U = solveIm(Nxg,Nyg,U,dir,directSolve);
-            end
+            lhsV    = lhsV + sparse(px1Index,p1Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px2Index,p2Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px3Index,p3Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px4Index,p4Index,coeff(i),M,M);
         end
         
     end
+end
+        
+%  U = solveIm(Nxg,Nyg,U,dir,directSolve);
+ 
     
 end
 
@@ -1272,8 +784,6 @@ count = count + 1;
                 
             end
         end
-        
-        
         
                 
         if uw == 0
@@ -1386,9 +896,6 @@ count = count + 1;
             end
                             
         end
-        
-        
-        
         
         %% change the vector U,V back to matrix
         for l = 1:Nxg
@@ -1511,8 +1018,6 @@ count = count + 1;
             + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
             + dpdy2 - dfydy(x(i,j),y(i,j),t2));
 %         
-       
-        
     end
 
 
@@ -1757,56 +1262,92 @@ count = count + 1;
         
     end
 
-    function getCompUxx(fS,bcx,bcy,axis,side,pos)
+    function U = getCompUxx(U,fS,bcx,bcy,axis,side,pos)
 
-      if axis == 0
-	iB = bcx - (-1)^side*pos
-	jB = bcy
-      end
+      % keep the exact uxx here for debug
+      % U(bcx,bcy) = dvdx2(x(iB,jB),y(iB,jB),t2);
+      
+      % get the index for the corresponding boundary points
 
+      iB = (axis==0)*(bcx - (-1)^side*pos) + (axis==1)*bcx;
+      jB = (axis==1)*(bcy - (-1)^side*pos) + (axis==0)*bcy;
+      dir=1;
+
+      dpdxApprox = approximateDpdx(iB,jB,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
+
+      % get the forcing term 
+      fx    = (axis==0)*fS.fx    + (axis==0)*fS.fy;
+
+      % dudt + u dudx + v dudy = -dpdx + mu (dudx2 + dudy2)
+      % if no twilightZone forcing, uxx = 1/mu * ( dp/dx - fx) - uyy
+      % ignore uyy term for a moment
+      % all the rest terms are equals to 0 on a no slip wall     
+      
+      U(bcx,bcy) = (1/mu)* ( dpdxApprox - fx(x(iB,jB),y(iB,jB),t2));
       
       if twilightZone > 0 
 
-	dudx2 = fS.dudx2;
-	dudx  = fS.dudx;
-	dvdx2 = fS.dvdx2;
-	
-	dvdy2 = fS.dvdy2;
-	dvdy  = fS.dvdy;
-	dudy2 = fS.dudy2;
-	dpdx  = fS.dpdx;
-	dpdy  = fS.dpdy;
-	
-	dudxy = fS.dudxy;
-	dvdxy = fS.dvdxy;
+	u     = fS.u;
+	v     = fS.v;
+	dudt  = (axis==0)*fS.dudt  + (axis==0)*fS.dvdt;
+	dudx  = (axis==0)*fS.dudx  + (axis==0)*fS.dvdx;
+	dudx2 = (axis==0)*fS.dudx2 + (axis==0)*fS.dvdx2;
+	dudy  = (axis==0)*fS.dudy  + (axis==0)*fS.dvdy;
+	dudy2 = (axis==0)*fS.dudy2 + (axis==0)*fS.dvdy2;
+
+	U(bcx,bcy) = (1/mu)*(dudt(x(iB,jB),y(iB,jB),t2) ...
+			     +  u(x(iB,jB),y(iB,jB),t2).*dudx(x(iB,jB),y(iB,jB),t2) ...
+			     +  v(x(iB,jB),y(iB,jB),t2).*dudy(x(iB,jB),y(iB,jB),t2) ...
+			     + dpdxApprox ...  
+			     - fy(x(iB,jB),y(iB,jB),t2)) ...
+		     - dvdy2(x(iB,jB),y(iB,jB),t2);
+      
+      elseif twilightZone == 0 
+
+	U(bcx,bcy) =  U(bcx,bcy) - getUxx(U,iB,jB,axis,h);
 	
       end
+      
+    end
 
-      i = 2;
-      iB = i+1;
-      dir=1;
-      if tOrder==2
-        dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-      elseif tOrder==4
-        dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-		   %            dpdyApprox = dpdy(x(iB,J),y(iB,J),t2);
-      end
-      
-      V(i,J) = (1/mu)*(dvdt(x(iB,J),y(iB,J),t2) ...
-		       +  u(x(iB,J),y(iB,J),t2).*dvdx(x(iB,J),y(iB,J),t2) ...
-		       +  v(x(iB,J),y(iB,J),t2).*dvdy(x(iB,J),y(iB,J),t2) ...
-		       + dpdyApprox ...  % need to touch this
-		       - fy(x(iB,J),y(iB,J),t2)) ...
-               - dvdy2(x(iB,J),y(iB,J),t2);
-      
-				%V(i,J) = dvdx2(x(iB,J),y(iB,J),t2);
-      
 
-      
+    function approxUxx = getUxx(U,iB,jB,axis,h)
 
+      xShift =   (axis==0);
+
+      yShift =   (axis==1);
+      
+      approxUxx = ((-1)* U(iB + xShift*2, jB + yShift*2) + 16* U(iB + xShift, jB + yShift) + ...
+		   (-1)* U(iB - xShift*2, jB - yShift*2) + 16* U(iB - xShift, jB - yShift) + ...
+		   (-30)*U(iB           , jB          ) )/h^2;
 
     end
 
+
+    function approxUx = getUx(U,iB,jB,axis,h)
+
+      xShift =   (axis==0);
+
+      yShift =   (axis==1);
+      
+      approxUx = ((-1)* U(iB + xShift*2, jB + yShift*2) + 16* U(iB + xShift, jB + yShift) + ...
+		  (-1)* U(iB - xShift*2, jB - yShift*2) + 16* U(iB - xShift, jB - yShift) + ...
+		 )/(12*h);
+    end
+
+
+    function approxUxy = getUxy(U,iB,jB,hx,hy)
+
+      approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ...
+		  +8*(-U(iB+2,jB+1) + 8*U(iB+1,jB+1) - 8*U(iB-1,jB+1) + U(iB-2,jB+1)) ...
+		  -8*(-U(iB+2,jB-1) + 8*U(iB+1,jB-1) - 8*U(iB-1,jB-1) + U(iB-2,jB-1)) ...
+		  + (-U(iB+2,jB-2) + 8*U(iB+1,jB-2) - 8*U(iB-1,jB-2) + U(iB-2,jB-2));
+      
+      approxUxy = approxUxy/(12*hx*12*hy);
+      
+    end
+
+    
     function V = solveGhostV(V,U,UC,UP1,UP2)
         
         dudx2 = fS.dudx2;

@@ -32,3 +32,11 @@ comparison to centered FD
 ++ combine formLHSU1 and formLHSV1
 ++ fix the bugs for boundary condition 2,3
 ++ move this to git..
+
+
+03/16/2017
+
+++ get rid of the repeated code in velocitySolver
+!!++ problem :: For no slip wall with given u,v,
+calculate compatability boundary, say in x direction,
+requires the info of dvdx 

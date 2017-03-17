@@ -1336,10 +1336,6 @@ count = count + 1;
             -8*(-U(i+2,j-1) + 8*U(i+1,j-1) - 8*U(i-1,j-1) + U(i-2,j-1)) ...
             + (-U(i+2,j-2) + 8*U(i+1,j-2) - 8*U(i-1,j-2) + U(i-2,j-2)))./(12*hx*12*hy);
         
-        
-%         dudxy = ((U(i+1,j+1) - U(i-1,j+1)) ...
-%             - (U(i+1,j-1) - U(i-1,j-1)))./(2*hx*2*hy);
-        
     end
 
 
@@ -1382,16 +1378,16 @@ count = count + 1;
             PN,PC,PP1,PP2,...
             count,tOrder)
         
-        dudx2 = fS.dudx2;
-        dudx  = fS.dudx;
-        dvdx2 = fS.dvdx2;
-        
-        dvdy2 = fS.dvdy2;
-        dvdy  = fS.dvdy;
-        dudy2 = fS.dudy2;
-        dpdx  = fS.dpdx;
-        dpdy  = fS.dpdy;
-        
+      dudx2 = fS.dudx2;
+      dudx  = fS.dudx;
+      dvdx2 = fS.dvdx2;
+      
+      dvdy2 = fS.dvdy2;
+      dvdy  = fS.dvdy;
+      dudy2 = fS.dudy2;
+      dpdx  = fS.dpdx;
+      dpdy  = fS.dpdy;
+      
         dudxy = fS.dudxy;
         dvdxy = fS.dvdxy;
         
