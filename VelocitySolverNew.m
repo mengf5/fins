@@ -1,4 +1,18 @@
 function [count,U,V,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS)
+%--------------------------------------------------------------------------
+% sub functions contained in this code:
+%1.           [UF,VF] = getFaceValues(fS,U,V,hx,hy)
+%2.                 F = WENOFlux(f,fd,dir,h,i,j,Ud)
+%3.  [wp1,wp2,wm1,wm2]= weight(f,dir,i,j)
+%4.                 W = solveIm(Nxg,Nyg,U,dir,directSolve)  
+
+
+% 1.get the face value at half points like i+1/2,j 
+% 2.get dirivatives with BWENO scheme  
+% 3.get the weights used in WENOFlux
+% 4.convert rhs matrix to b then solve Ax\b
+%
+%--------------------------------------------------------------------------
 
 %read in fS;
 %--------------------------------------------------------------------------
@@ -601,7 +615,6 @@ elseif tExplicit == 0
 end
 
 
-end
 
 % now fix em corner points
 %----------------------------------------------------------------
@@ -622,11 +635,6 @@ for sideX = 0:1
         
         px4 = px - (-1)^sideX * 2;
         py4 = py - (-1)^sideY * 2;
-        
-        px1Index = getIndex(fS,px1,px1,py1,py1);
-        px2Index = getIndex(fS,px2,px2,py2,py2);
-        px3Index = getIndex(fS,px3,px3,py3,py3);
-        px4Index = getIndex(fS,px4,px4,py4,py4);
         
         switch localBC
             
@@ -695,27 +703,39 @@ for sideX = 0:1
         py4 = [py4,py4E];
         
         for i = 1:length(px1)
-            p1Index = getIndex(fS,px1(i),px1(i),py1(i),py1(i));
-            p2Index = getIndex(fS,px2(i),px2(i),py2(i),py2(i));
-            p3Index = getIndex(fS,px3(i),px3(i),py3(i),py3(i));
-            p4Index = getIndex(fS,px4(i),px4(i),py4(i),py4(i));
-            
-            lhsU    = lhsU + sparse(px1Index,p1Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px2Index,p2Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px3Index,p3Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px4Index,p4Index,coeff(i),M,M);
-            
-            lhsV    = lhsV + sparse(px1Index,p1Index,coeff(i),M,M);
-            lhsV    = lhsV + sparse(px2Index,p2Index,coeff(i),M,M);
-            lhsV    = lhsV + sparse(px3Index,p3Index,coeff(i),M,M);
-            lhsV    = lhsV + sparse(px4Index,p4Index,coeff(i),M,M);
+
         end
         
     end
 end
-        
-%  U = solveIm(Nxg,Nyg,U,dir,directSolve);
- 
+
+% solve the problem
+%-----------------------------------------------------------------------------
+U = solveIm(Nxg,Nyg,rhsU,dir,directSolve);
+
+%fix the ghost points for V
+%----------------------------------------------------------------------------
+  for axis = 0:1
+    for side = 0:1
+      switch localBC
+	case 1
+
+          pos = 2;
+          
+          [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+	  
+          V(bcx,bcy) = getCompUxx(x(bcx,bcy),y(bcx,bcy),t2);
+	  	  
+      end
+    end
+  end
+  
+
+% solve the problem
+%-----------------------------------------------------------------------------
+V = solveIm(Nxg,Nyg,rhsU,dir,directSolve);
+
+
     
 end
 
@@ -1021,247 +1041,6 @@ count = count + 1;
     end
 
 
-    function U = solveGhostU(fS,BC,Nxg,Nyg,t2,u,v,x,y,hx,hy,dt,dte,dtn,...
-            U,...
-            VN,VC,VP1,VP2,...
-            PN,PC,PP1,PP2,...
-            count,tOrder)
-        
-        dudx2 = fS.dudx2;
-        dudx  = fS.dudx;
-        dvdx2 = fS.dvdx2;
-        
-        dvdy2 = fS.dvdy2;
-        dvdy  = fS.dvdy;
-        dudy2 = fS.dudy2;
-        dpdx  = fS.dpdx;
-        dpdy  = fS.dpdy;
-        
-        dudxy = fS.dudxy;
-        dvdxy = fS.dvdxy;
-        
-
-        
-        % boundarys for u
-        if BC == 1
-            i = 3;
-            J = 1:Nyg;
-            U(i,J) =u(x(i,J),y(i,J),t2);
-       
-        
-        i = Nxg-2;
-        J = 1:Nyg;
-        U(i,J) =u(x(i,J),y(i,J),t2);
-        end
-        
-        j  = 3;
-        I  = 1:Nxg;
-        U(I,j) =u(x(I,j),y(I,j),t2);
-        
-        j  = Nyg-2;
-        I  = 1:Nxg;
-        U(I,j) =u(x(I,j),y(I,j),t2);
-        
-        if BC == 1
-        % ghosts in x directions
-        i = 1;
-        J = 4:Nyg-3;
-        iB = i+2;
-        
-        dir=0;
-        
-        if count==1
-            
-            if tOrder==2
-                VAppprox = VC;
-            elseif tOrder ==4
-                VAppprox = 3*VC - 3*VP1 + VP2;
-                %VAppprox = VC;
-            end
-            
-            dvdxyApprox = approximateDudxy(iB,J,VAppprox,hx,hy);
-            %dvdxyApprox = dvdxy(x(iB,J),y(iB,J),t2);
-
-            U(i,J) = -dvdxyApprox;
-            
-            if tOrder==2
-                PAppprox = PC;
-            elseif tOrder ==4
-                PAppprox = 3*PC - 3*PP1 + PP2;
-            end
-            
-            dudx3Approx = approximateDudx3(fS,iB,J,PAppprox,hx,hy);
-            U(i,J) = dudx3Approx;
-        else
-            
-            dvdxyApprox = approximateDudxy(iB,J,VN,hx,hy);
-            %dvdxyApprox = dvdxy(x(iB,J),y(iB,J),t2);
-                        
-            U(i,J) = -dvdxyApprox;
-            
-            
-            dudx3Approx = approximateDudx3(fS,iB,J,PN,hx,hy);
-            U(i,J) = dudx3Approx;
-            
-        end
-        
-
-        
-        
-        i = Nxg;
-        iB = i-2;
-        if count==1
-            
-            if tOrder==2
-                VAppprox = VC;
-            elseif tOrder ==4
-                VAppprox = 3*VC - 3*VP1 + VP2;
-                %VAppprox = VC;
-            end
-            
-            dvdxyApprox = approximateDudxy(iB,J,VAppprox,hx,hy);
-            %dvdxyApprox = dvdxy(x(iB,J),y(iB,J),t2);
-            
-            U(i,J) = -dvdxyApprox;
-            
-        else
-            dvdxyApprox = approximateDudxy(iB,J,VN,hx,hy);
-            %dvdxyApprox = dvdxy(x(iB,J),y(iB,J),t2);
-            U(i,J) = -dvdxyApprox;            
-        end
-        
-        i = 2;
-        iB = i+1;
-        U(i,J) = -dvdy(x(iB,J),y(iB,J),t2);
-        
-        i = Nxg-1;
-        iB = i-1;
-        U(i,J) = -dvdy(x(iB,J),y(iB,J),t2);
-        
-        end
-        
-        dir=0;
-        % ghosts in y direction
-        if BC==1
-            I = 4:Nxg-3;
-        elseif BC == 6
-            I = 3:Nxg-3;
-        end
-        j = 1;
-        U(I,j) =0;
-        
-        j = Nyg;
-        U(I,j) =0;
-        
-        j = 2;
-        jB = j+1;
-        if tOrder==2
-            dpdxApprox = approximateDpdx(I,jB,count,PN,PC,PP1,PP2,hx,dt,dte,dtn,dir);
-        elseif tOrder==4
-            dpdxApprox = approximateDpdx(I,jB,count,PN,PC,PP1,PP2,hx,dt,dte,dtn,dir);
-           %dpdxApprox = dpdx(x(I,jB),y(I,jB),t2);
-        end
-        
-        if tw == 0
-            
-            U(I,j) =(1/mu)*( ...
-            + dpdxApprox ...  % need to touch this
-            - fx(x(I,jB),y(I,jB),t2)) ;
-        
-        elseif tw == 1
-        U(I,j) =(1/mu)*(dudt(x(I,jB),y(I,jB),t2) ...
-            +  u(x(I,jB),y(I,jB),t2).*dudx(x(I,jB),y(I,jB),t2) ...
-            +  v(x(I,jB),y(I,jB),t2).*dudy(x(I,jB),y(I,jB),t2) ...
-            + dpdxApprox ...  % need to touch this
-            - fx(x(I,jB),y(I,jB),t2)) ...
-            - dudx2(x(I,jB),y(I,jB),t2);
-        end
-        
-        j = Nyg-1;
-        jB = j-1;
-        if tOrder==2
-            dpdxApprox = approximateDpdx(I,jB,count,PN,PC,PP1,PP2,hx,dt,dte,dtn,dir);
-        elseif tOrder==4
-            dpdxApprox = approximateDpdx(I,jB,count,PN,PC,PP1,PP2,hx,dt,dte,dtn,dir);
-           %dpdxApprox = dpdx(x(I,jB),y(I,jB),t2);
-        end
-        
-        if tw == 0
-            
-            U(I,j) =(1/mu)*( ...
-            + dpdxApprox ...  % need to touch this
-            - fx(x(I,jB),y(I,jB),t2)) ;
-        
-        elseif tw == 1
-            
-        U(I,j) =(1/mu)*(dudt(x(I,jB),y(I,jB),t2) ...
-            +  u(x(I,jB),y(I,jB),t2).*dudx(x(I,jB),y(I,jB),t2) ...
-            +  v(x(I,jB),y(I,jB),t2).*dudy(x(I,jB),y(I,jB),t2) ...
-            + dpdxApprox ...  % need to touch this
-            - fx(x(I,jB),y(I,jB),t2)) ...
-            - dudx2(x(I,jB),y(I,jB),t2);
-        end
-        
-        if BC == 1
-        % corner points
-        for i = 1:2
-            for j = 1:2
-                U(i,j) = u(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        % fix corner points for U
-        iB = 3;
-        jB = 3;
-        D1 = hx*dudx(x(iB,jB),y(iB,jB),t2) + hy*dudy(x(iB,jB),y(iB,jB),t2);
-        D2 = hx^2/2*dudx2(x(iB,jB),y(iB,jB),t2) + hy^2/2*dudy2(x(iB,jB),y(iB,jB),t2) - hx*hy*dvdy2(x(iB,jB),y(iB,jB),t2);
-        U(2,2) = 3/2*D1 + 3*D2;
-        
-        iB = 3;
-        jB = 3;
-        iShift = 1;
-        jShift = 2;
-        D1 = (iShift)*hx*dudx(x(iB,jB),y(iB,jB),t2) + (jShift)*hy*dudy(x(iB,jB),y(iB,jB),t2);
-        D2 = ((iShift)*hx)^2/2*dudx2(x(iB,jB),y(iB,jB),t2) + ((jShift)*hy)^2/2*dudy2(x(iB,jB),y(iB,jB),t2) - (iShift)*hx*(jShift)*hy*dvdy2(x(iB,jB),y(iB,jB),t2);
-        
-        U(iB-iShift,jB-jShift) =  3/2*D1 + 3*D2;
-        
-        iShift = 2;
-        jShift = 1;
-        D1 = (iShift)*hx*dudx(x(iB,jB),y(iB,jB),t2) + (jShift)*hy*dudy(x(iB,jB),y(iB,jB),t2);
-        D2 = ((iShift)*hx)^2/2*dudx2(x(iB,jB),y(iB,jB),t2) + ((jShift)*hy)^2/2*dudy2(x(iB,jB),y(iB,jB),t2) - (iShift)*hx*(jShift)*hy*dvdy2(x(iB,jB),y(iB,jB),t2);
-        
-        U(iB-iShift,jB-jShift) =  3/2*D1 + 3*D2;
-        
-                
-        for i = Nxg-1:Nxg
-            for j = 1:2
-                U(i,j) = u(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        for i = 1:2
-            for j = Nyg-1:Nyg
-                U(i,j) = u(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        iB = 3;
-        jB = Nyg-2;
-        D1 = hx*dudx(x(iB,jB),y(iB,jB),t2) - hy*dudy(x(iB,jB),y(iB,jB),t2);
-        D2 = hx^2/2*dudx2(x(iB,jB),y(iB,jB),t2) + hy^2/2*dudy2(x(iB,jB),y(iB,jB),t2) - hx*(-hy)*dvdy2(x(iB,jB),y(iB,jB),t2);
-        U(2,Nyg-1) = 3/2*D1 + 3*D2;
-        
-        for i = Nxg-1:Nxg
-            for j = Nyg-1:Nyg
-                U(i,j) = u(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        end
-        
-    end
-
     function U = getCompUxx(U,fS,bcx,bcy,axis,side,pos)
 
       % keep the exact uxx here for debug
@@ -1348,230 +1127,6 @@ count = count + 1;
     end
 
     
-    function V = solveGhostV(V,U,UC,UP1,UP2)
-        
-        dudx2 = fS.dudx2;
-        dudx  = fS.dudx;
-        dvdx2 = fS.dvdx2;
-        
-        dvdy2 = fS.dvdy2;
-        dvdy  = fS.dvdy;
-        dudy2 = fS.dudy2;
-        dpdx  = fS.dpdx;
-        dpdy  = fS.dpdy;
-        
-        dudxy = fS.dudxy;
-        dvdxy = fS.dvdxy;
-        
-        %% boundarys for v
-        if BC == 1
-            
-            i = 3;
-            J = 1:Nyg;
-            V(i,J) =v(x(i,J),y(i,J),t2);
-        
-        i = Nxg-2;
-        J = 1:Nyg;
-        V(i,J) =v(x(i,J),y(i,J),t2);
-        end
-        
-        j  = 3;
-        I  = 1:Nxg;
-        V(I,j) =v(x(I,j),y(I,j),t2);
-        
-        j  = Nyg-2;
-        I  = 1:Nxg;
-        V(I,j) =v(x(I,j),y(I,j),t2);
-        
-        if BC == 1
-        % ghosts in x directions
-        i = 1;
-        J = 4:Nyg-3;
-        iB = i+2;
-        V(i,J) =0;
-        
-        i = Nxg;
-        iB = i-2;
-        V(i,J) =0;
-        
-        i = 2;
-        iB = i+1;
-        dir=1;
-        if tOrder==2
-            dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-        elseif tOrder==4
-            dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-            %            dpdyApprox = dpdy(x(iB,J),y(iB,J),t2);
-        end
-        
-        V(i,J) = (1/mu)*(dvdt(x(iB,J),y(iB,J),t2) ...
-            +  u(x(iB,J),y(iB,J),t2).*dvdx(x(iB,J),y(iB,J),t2) ...
-            +  v(x(iB,J),y(iB,J),t2).*dvdy(x(iB,J),y(iB,J),t2) ...
-            + dpdyApprox ...  % need to touch this
-            - fy(x(iB,J),y(iB,J),t2)) ...
-            - dvdy2(x(iB,J),y(iB,J),t2);
-        
-        %V(i,J) = dvdx2(x(iB,J),y(iB,J),t2);
-        
-        i = Nxg-1;
-        iB = i-1;
-        if tOrder==2
-            dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-        elseif tOrder==4
-            dpdyApprox = approximateDpdx(iB,J,count,PN,PC,PP1,PP2,hy,dt,dte,dtn,dir);
-            %             dpdyApprox = dpdy(x(iB,J),y(iB,J),t2);
-        end
-        
-        V(i,J) = (1/mu)*(dvdt(x(iB,J),y(iB,J),t2) ...
-            +  u(x(iB,J),y(iB,J),t2).*dvdx(x(iB,J),y(iB,J),t2) ...
-            +  v(x(iB,J),y(iB,J),t2).*dvdy(x(iB,J),y(iB,J),t2) ...
-            + dpdyApprox ...  % need to touch this
-            - fy(x(iB,J),y(iB,J),t2)) ...
-            - dvdy2(x(iB,J),y(iB,J),t2);
-        %V(i,J) =dvdx2(x(iB,J),y(iB,J),t2);
-        
-        end
-        
-        % ghosts in y direction
-        if BC == 1
-            I = 4:Nxg-3;
-        elseif BC == 6
-            I = 3:Nxg-3;
-        end
-        j = 1;
-        jB = j+2;
-        
-        if count == 1
-            
-            if BC == 6 && fS.uvSwitch == 2
-                if tOrder==2
-                    UAppprox = UC;
-                elseif tOrder ==4
-                    UAppprox = 3*UC - 3*UP1 + UP2;
-                end
-                
-            else
-                UAppprox = U;
-            end
-            
-            if tOrder==2
-                dudxyApprox = approximateDudxy(I,jB,UAppprox,hx,hy);
-            elseif tOrder==4
-                dudxyApprox = approximateDudxy(I,jB,UAppprox,hx,hy);
-                %            dudxyApprox = dudxy(x(I,jB),y(I,jB),t2);
-            end
-        
-        else
-            dudxyApprox = approximateDudxy(I,jB,U,hx,hy);
-        end
-        
-        V(I,j) =-dudxyApprox; %-dudxy(x(I,jB),y(I,jB),t2);    %% known after calculate u
-        
-        j = Nyg;
-        jB = j-2;
-        
-        if count == 1
-            
-            if BC == 6 && fS.uvSwitch == 2
-                if tOrder==2
-                    UAppprox = UC;
-                elseif tOrder ==4
-                    UAppprox = 3*UC - 3*UP1 + UP2;
-                end
-            end
-            
-            if tOrder==2
-                dudxyApprox = approximateDudxy(I,jB,UAppprox,hx,hy);
-            elseif tOrder==4
-                dudxyApprox = approximateDudxy(I,jB,UAppprox,hx,hy);
-                %            dudxyApprox = dudxy(x(I,jB),y(I,jB),t2);
-            end
-            
-        else
-            dudxyApprox = approximateDudxy(I,jB,U,hx,hy);
-        end
-        
-        
-%         if tOrder==2
-%             dudxyApprox = approximateDudxy(I,jB,U,hx,hy);
-%         elseif tOrder==4
-%             dudxyApprox = approximateDudxy(I,jB,U,hx,hy);
-%             %             dudxyApprox = dudxy(x(I,jB),y(I,jB),t2);
-%         end
-        V(I,j) =-dudxyApprox;%-dudxy(x(I,jB),y(I,jB),t2);
-        
-        j = 2;
-        jB = j+1;
-        if tw== 1
-        V(I,j) =-dudx(x(I,jB),y(I,jB),t2);
-        elseif tw==0 
-        V(I,j) = 0;
-        end
-        
-        j = Nyg-1;
-        jB = j-1;
-        if tw== 1
-        V(I,j) =-dudx(x(I,jB),y(I,jB),t2);
-        elseif tw==0
-            V(I,j) = 0;
-        end
-        
-        if BC == 1
-        % corner points
-        for i = 1:2
-            for j = 1:2
-                V(i,j) = v(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        
-        %% fix corner points for V
-        iB = 3;
-        jB = 3;
-        D1 = hx*dvdx(x(iB,jB),y(iB,jB),t2) + hy*dvdy(x(iB,jB),y(iB,jB),t2);
-        D2 = hx^2/2*dvdx2(x(iB,jB),y(iB,jB),t2) + hy^2/2*dvdy2(x(iB,jB),y(iB,jB),t2) - hx*hy*dudx2(x(iB,jB),y(iB,jB),t2);
-        V(2,2) = 3/2*D1 + 3*D2;
-        
-        iB = 3;
-        jB = 3;
-        iShift = 1;
-        jShift = 2;
-        D1 = (iShift)*hx*dvdx(x(iB,jB),y(iB,jB),t2) + (jShift)*hy*dvdy(x(iB,jB),y(iB,jB),t2);
-        D2 = ((iShift)*hx)^2/2*dvdx2(x(iB,jB),y(iB,jB),t2) + ((jShift)*hy)^2/2*dvdy2(x(iB,jB),y(iB,jB),t2) - (iShift)*hx*(jShift)*hy*dudx2(x(iB,jB),y(iB,jB),t2);
-        
-        V(iB-iShift,jB-jShift) =  3/2*D1 + 3*D2;
-        
-        iShift = 2;
-        jShift = 1;
-        D1 = (iShift)*hx*dvdx(x(iB,jB),y(iB,jB),t2) + (jShift)*hy*dvdy(x(iB,jB),y(iB,jB),t2);
-        D2 = ((iShift)*hx)^2/2*dvdx2(x(iB,jB),y(iB,jB),t2) + ((jShift)*hy)^2/2*dvdy2(x(iB,jB),y(iB,jB),t2) - (iShift)*hx*(jShift)*hy*dudx2(x(iB,jB),y(iB,jB),t2);
-        
-        V(iB-iShift,jB-jShift) =  3/2*D1 + 3*D2;
-        
-        
-        for i = Nxg-1:Nxg
-            for j = 1:2
-                V(i,j) = v(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        for i = 1:2
-            for j = Nyg-1:Nyg
-                V(i,j) = v(x(i,j),y(i,j),t2);
-            end
-        end
-        
-        for i = Nxg-1:Nxg
-            for j = Nyg-1:Nyg
-                V(i,j) = v(x(i,j),y(i,j),t2);
-            end
-        end
-        end
-        
-    end
-
-end
-
 function [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos)
         
         bcxStart = (side==0)*ia + (side==1)*ib;
@@ -1598,5 +1153,11 @@ function [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos)
         % shift from boundary to ghost line wrt its pos(ition)
         bcx = bcx + (axis==0)*( - (-1)^side * pos );
         bcy = bcy + (axis==1)*( - (-1)^side * pos );
+
+end
+
+function getDs
+
+
 
 end

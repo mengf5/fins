@@ -1,5 +1,15 @@
 function [lhsU,lhsV] = formLHS(fS)
-
+%--------------------------------------------------------------------------
+% sub functions contained in this code:
+% 1. function L = setLaplacian(L,hx,hy,Nyg,mu,imTime,M,pts,lPts)
+% 2. function L = setDx(L,h,side,Stride,M,pts,lPts)
+% 3. function L = setDxx(L,h,side,Stride,M,pts,lPts)
+% 4. function L = setDxxx(L,h,side,Stride,M,pts,lPts)
+% 5. function L = setOne(L,M,pm,pts,matchPts,lPts)
+% 6. function L = setZero(L,M,pts,lPts)
+% 7. function L = setExt(L,side,Stride,M,pts)
+%--------------------------------------------------------------------------
+  
 % get info from INS class
 Nxg = fS.Nxg;
 Nyg = fS.Nyg;
@@ -398,7 +408,7 @@ L(pts,:)     = coeffZero;
 
 end
 
-function L  = setExt(L,side,Stride,M,pts)
+function L = setExt(L,side,Stride,M,pts)
 
 extOrder = 6;
 coeff = [1, -6, 15, -20, 15, -6, 1];
