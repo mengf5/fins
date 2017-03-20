@@ -540,9 +540,8 @@ elseif tExplicit == 0
                 case 3
                     
                     % u = u(t)
-                    pm    = 1;
-                    lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
-                    lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+                    rhsU(bcx,bcy) = u(x(bcx,bcy),y(bcx,bcy),t2);
+                    rhsV(bcx,bcy) = v(x(bcx,bcy),y(bcx,bcy),t2);
                     
                 case 4
                     
@@ -579,10 +578,10 @@ elseif tExplicit == 0
                     
                     if axis == 0
                         rhsU(bcx,bcy)  = -getUxy(V,bcx,bcy,hx,hy,axis,side,pos);%getCompUxy(V,fS,bcx,bcy,axis,side,pos);
-                        %rhsV(bcx,bcy)  = setExt(V,side,Nyg,M,bcPts);
+                        rhsV(bcx,bcy)  = getZero(bcx,bcy);
                         
                     elseif axis == 1
-                        %rhsU(bcx,bcy)  = setExt(U,side,1,M,bcPts);
+                        rhsU(bcx,bcy)  = getZero(bcx,bcy);
                         rhsV(bcx,bcy)  = -getUxy(U,bcx,bcy,hx,hy,axis,side,pos);
                         
                     end
@@ -590,30 +589,25 @@ elseif tExplicit == 0
                 case 2
                     % u(ia-i,j)  = u(Nx - i,j)
                     
-                    for pos = 1:2;
-                        
-                        [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
-                        
-                        lhsU  = setOne(lhsU,M,+1,bcPts,bcPts,lBcPts);
-                        lhsV  = setOne(lhsV,M,+1,bcPts,bcPts,lBcPts);
-                        
-                        matchSide = abs(side-1);
-                        [matchPts,lMatchPts] =  getBCGLIndex(fS,axis,matchSide,-pos);
-                        
-                        lhsU  = setOne(lhsU,M,-1,bcPts,matchPts,lMatchPts);
-                        lhsV  = setOne(lhsV,M,-1,bcPts,matchPts,lMatchPts);
-                        
-                    end
+%                     for pos = 1:2;
+%                         
+% %                         [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+%                                                 
+%                         matchSide = abs(side-1);
+%                         [bcxM,bcyM] =  getBCGLlocation(axis,matchSide,ia,ib,ja,jb,-pos);
+%                         
+%                         rhsU(bcxM,bcyM)  = getZero(bcxM,bcyM);
+%                         
+%                     end
                     
                 case 3
                     % u = u(t)
                     for pos = 1:2;
                         
-                        [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+                        [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
                         
-                        pm    = 1;
-                        lhsU  = setOne(lhsU,M,pm,bcPts,bcPts,lBcPts);
-                        lhsV  = setOne(lhsV,M,pm,bcPts,bcPts,lBcPts);
+                        rhsU(bcx,bcy) = u(x(bcx,bcy),y(bcx,bcy),t2);
+                        rhsV(bcx,bcy) = v(x(bcx,bcy),y(bcx,bcy),t2);
                         
                     end
                     
@@ -1192,6 +1186,12 @@ approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ..
             + (-U(iB+2,jB-2) + 8*U(iB+1,jB-2) - 8*U(iB-1,jB-2) + U(iB-2,jB-2));
 
 approxUxy = approxUxy/(12*hx*12*hy);
+
+end
+
+function zero = getZero(bcx,bcy)
+
+zero = zeros(length(bcx),length(bcy));
 
 end
 
