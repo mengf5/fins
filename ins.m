@@ -11,6 +11,10 @@ classdef ins < handle
       tEnd               =  1;
       tOrder             =  2;
       tMethod            =  1;
+      fLCBDF             =  0;
+      cA                 = []; % coefficients of BDF of previous u(LHS)
+      cBI                = []; % coefficients of BDF of fI(RHS)
+      cBE                = []; % coefficients of BDF of fE(RHS)      
       CFL                =  0;
       CFLfix             =  .9;
       numberOfCorrector  =  0;
@@ -151,7 +155,7 @@ classdef ins < handle
                    
                elseif fS.tMethod == 2
                    
-                   stabilityReal = 1.;
+                   stabilityReal = 1.; 
                    stabilityImag = 1.2;      
                    
                end
@@ -159,72 +163,60 @@ classdef ins < handle
                
            end
            
-           
-           if fS.CFL ~= 0
-               U0   = fS.u(fS.x,fS.y,0);
-               V0   = fS.v(fS.x,fS.y,0);
-               ilambda = max(max(U0))*(1+2/3)/fS.hx + max(max(V0))*(1+2/3)/fS.hy;
-               
-               if fS.tExplicit==0
-                   rlambda = 0;
-               else
-                   if max(abs(fS.ad41),abs(fS.ad42)) > 0
-                       gradu = gradient(U0);
-                       gradv = gradient(V0);
-                       maxgrad = max(max(max(gradu,gradv)));
-                       rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2 + 2*(fS.ad41 + fS.ad42*maxgrad)*16;
-                   else
-                       rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2;
-                   end
-               end
-               
-               fS.dt = sqrt(fS.CFL/((ilambda/stabilityImag)^2 + (rlambda/stabilityReal)^2));
-               tn = ceil(fS.tEnd/fS.dt);       % number of time-step
-               fS.dt = fS.tEnd/tn;
+           % get the initial U0 and V0
+           if fS.twilightZone == 7
+               G = 1;
+               H = fS.domain(2,2);
+               U0 = G*H^2/(2*fS.mu)*(1 - fS.y.^2/H^2);
            else
-               if fS.twilightZone == 7
-                   G = 1;
-                   H = fS.domain(2,2);
-                   U0 = G*H^2/(2*fS.mu)*(1 - fS.y.^2/H^2);
-               else
-                   U0   = fS.u(fS.x,fS.y,0);
-               end
-               V0   = fS.v(fS.x,fS.y,0);
-               ilambda = max(max(U0))*(1+2/3)/fS.hx + max(max(V0))*(1+2/3)/fS.hy;
+               U0   = fS.u(fS.x,fS.y,0);
+           end
+           V0   = fS.v(fS.x,fS.y,0);
+           
+           ilambda = max(max(U0))*(1+2/3)/fS.hx + max(max(V0))*(1+2/3)/fS.hy;
+           
+           if fS.tExplicit==0
+               rlambda = 0;
                
-               if fS.tExplicit==0
-                   rlambda = 0;
-               else
-                   
-                   if max(abs(fS.ad41),abs(fS.ad42)) > 0
-                       gradu = gradient(U0);
-                       gradv = gradient(V0);
-                       maxgrad = max(max(max(gradu,gradv)));
-                       rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2 + 2*(fS.ad41 + fS.ad42*maxgrad)*16;
-                   else
-                       rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2;
-                   end
-               end
-                              
-               %nadapt = 10;
-               fS.dt = sqrt(fS.CFLfix/((ilambda/stabilityImag)^2 + (rlambda/stabilityReal)^2));
+           elseif fS.tExplicit==1
                
-               if fS.tMethod == 1
-                   stabilityRealViscous = 3;
+               if max(abs(fS.ad41),abs(fS.ad42)) > 0
+                   gradu = gradient(U0);
+                   gradv = gradient(V0);
+                   maxgrad = max(max(max(gradu,gradv)));
+                   rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2 + 2*(fS.ad41 + fS.ad42*maxgrad)*16;
+               else
                    rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2;
-                   dtViscous = sqrt(fS.CFLfix/( (rlambda/stabilityRealViscous)^2));
-                   if dtViscous < fS.dt
-                       fS.dt = dtViscous;
-                   end
                end
-               %t = dt;
-               tn = ceil(fS.tEnd/fS.dt);       % number of time-step
-               fS.dt = fS.tEnd/tn;
            end
            
+           %nadapt = 10;
+           if fS.CFL ~=0
+               tempCFL = fS.CFL;
+           else
+               tempCFL = fS.CFLfix;
+           end
+           
+           fS.dt = sqrt(tempCFL/((ilambda/stabilityImag)^2 + (rlambda/stabilityReal)^2));
+           
+           if fS.tMethod == 1
+               stabilityRealViscous = 3;
+               rlambda = 4*max(fS.mu,fS.al)*(1+1/3)/fS.hx^2 + 4*max(fS.mu,fS.al)*(1+1/3)/fS.hy^2;
+               dtViscous = sqrt(fS.CFLfix/( (rlambda/stabilityRealViscous)^2));
+               if dtViscous < fS.dt
+                   fS.dt = dtViscous;
+               end
+           end
+           %t = dt;
+           tn = ceil(fS.tEnd/fS.dt);       % number of time-step
+           fS.dt = fS.tEnd/tn;
+           
+           
            if fS.tOrder==2
+               
                fS.preTime  = [3/2*fS.dt,-1/2*fS.dt];
                fS.corrTime = [1/2*fS.dt, 1/2*fS.dt];
+           
            elseif fS.tOrder==4
                if fS.tMethod==1
                    %fS.preTime =
@@ -234,9 +226,17 @@ classdef ins < handle
                    % this is ab3
                    
                    fS.corrTime =[3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
+                   
                elseif fS.tMethod==2
-                   fS.preTime = 12/25*[4*fS.dt,-6*fS.dt,4*fS.dt,-1*fS.dt];
-                   fS.corrTime = [12/25*fS.dt,0,0,0];
+                   
+                   fS.cBE = 12/25*[4,-6,4,-1]*fS.dt;
+                   fS.preTime = fS.cBE;
+                   
+                   fS.cBI = 12/25*fS.dt;
+                   fS.corrTime = [fS.cBI,0,0,0];
+                   
+                   fS.cA  = 12/25*[-4,3,-4/3,1/4];
+                   
                end
            end
            
@@ -247,7 +247,8 @@ classdef ins < handle
                    if fS.tMethod==1                       
                        fS.imTime = [3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
                    elseif fS.tMethod==2
-                       fS.imTime = 12/25*fS.dt;
+                       fS.cBI = 12/25*fS.dt;
+                       fS.imTime = fS.cBI;
                    end
                end
            end

@@ -18,8 +18,6 @@ hy  = fS.hy;
 BC  = fS.BC;
 
 %extOrder   = fS.extOrder;
-imTime     = fS.imTime;
-mu         = fS.mu;
 
 % total number of grid points(including ghosts)
 M    = Nyg*Nxg;
@@ -29,7 +27,7 @@ lhsP = spalloc(M,M,7*M);
 % get the indecies for all the interior points for U
 [intPts,lIntPts] = getIndex(fS,ia+1,ib-1,ja+1,jb-1);
 % put the laplacian operator onto these indecies
-lhsP = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,intPts,lIntPts);
+lhsP = setPoission(lhsP,hx,hy,Nyg,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction
@@ -69,12 +67,12 @@ for axis = 0:1
             
             case 1
                 % Laplace(P) = ...
-                lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                lhsP  = setPoission(lhsP,hx,hy,Nyg,M,bcPts,lBcPts);
                 
             case 2
                 % Laplace(P) = ...
                 if side == 0
-                    lhsP  = setLaplacian(lhsP,hx,hy,Nyg,mu,imTime,M,bcPts,lBcPts);
+                    lhsP  = setPoission(lhsP,hx,hy,Nyg,M,bcPts,lBcPts);
                     
                 elseif side == 1
                     
@@ -284,14 +282,14 @@ end
 end
 
 
-function L = setLaplacian(L,hx,hy,Nyg,mu,imTime,M,pts,lPts)
+function L = setPoission(L,hx,hy,Nyg,M,pts,lPts)
 
 % get the coeffcients for the laplacian dxx + dyy in fourth order
-coeffC  =  (1-imTime(1)*mu*(-(30/(12*hy^2)+30/(12*hx^2)))) * ones(1,lPts);
-coeffY1 = -imTime(1)*mu*16/(12*hy^2)   * ones(1,lPts);
-coeffY2 = -imTime(1)*mu*(-1/(12*hy^2)) * ones(1,lPts);
-coeffX1 = -imTime(1)*mu*16/(12*hx^2)   * ones(1,lPts);
-coeffX2 = -imTime(1)*mu*(-1/(12*hx^2)) * ones(1,lPts);
+coeffC  =  (30/(12*hy^2)+30/(12*hx^2)) * ones(1,lPts);
+coeffY1 = -16/(12*hy^2)  * ones(1,lPts);
+coeffY2 = ( 1/(12*hy^2)) * ones(1,lPts);
+coeffX1 = -16/(12*hx^2)  * ones(1,lPts);
+coeffX2 = ( 1/(12*hx^2)) * ones(1,lPts);
 
 % put them o the corresponding locations in the sparse matrx
 L = L + sparse(pts,pts,coeffC,M,M);

@@ -12,7 +12,6 @@ correct   = fS.numberOfCorrector;
 nadapt    = fS.numberOfAdapt;
 tOrder    = fS.tOrder;
 tExplicit = fS. tExplicit;
-tMethod   = fS.tMethod;
 %extOrder  = fS.extOrder;
 
 if fS.makeMovie == 1
@@ -23,7 +22,7 @@ if fS.makeMovie == 1
     open(movieV);
     open(movieP);
     
-            gcf=figure(1);
+    gcf=figure(1);
             %set(gcf,'visible','off');
     
 end
@@ -117,13 +116,6 @@ hx  = fS.hx;
 hy  = fS.hy;
 
 Lp =  formLHSP(fS);
-% if (BC == 1)  || (BC == 6)
-%     Lp = formLHSp1;
-% elseif BC == 2
-%     Lp = formLHSp2;
-% elseif (BC == 3) || (BC == 4)
-%     Lp = formLHSp3;    
-% end
 
 fS.Lp = Lp;
 
@@ -138,7 +130,6 @@ end
 
 if  tExplicit == 0
     
-%     imTime    = fS.imTime;    
     [Lu, Lv]   = formLHS(fS);
     fS.Lu = Lu;    
     fS.Lv = Lv;
@@ -213,9 +204,9 @@ end
 % Start time marching
 %--------------------------------------------------------------------------
 tic
-t1 = tC-dt;
-dtn = dt; 
-dte = dt;
+%t1 = tC-dt;
+% dtn = dt; 
+% dte = dt;
 n = 1;
 
 % if fS.makeMovie == 1
@@ -223,24 +214,62 @@ n = 1;
 %     axis tight manual
 %     set(gca,'nextplot','replacechildren'); 
 % end
-t2 = t1+dt; 
+
+t2 = tC; 
 t  = [textr,tP3,tP2,tP1,tC];
+
+
+flagUpdate = 0;
 
 while (t2 - tend) < eps-dt/4
     n = n+1;
 
     count = 1;
-    t1 = t1 + dt;
-    t2 = t1 + dtn;%the time of stage2 in each time step
-fS.t2= t2;
+    t1 = t(end);
+    t2 = t1 + dt;%the time of stage2 in each time step
+    fS.t2= t2;
 
     t = [t t2];
     
-    if size(t) < 5
-        fS.tSpan = t;
-    else
-        fS.tSpan = t(end-4:end);
+    fS.tSpan = t(end-4:end);
+    
+    
+    %% if dt is updated from the previous time step,
+    %  recalculate coeffs and matrix..
+    if flagUpdate == 1
+        [fS.cA, fS.cBI, fS.cBE] = getBDFCoeff(fS);
+        
+        if  tExplicit == 0
+            
+            [Lu, Lv]   = formLHS(fS);
+            fS.Lu = Lu;
+            fS.Lv = Lv;
+            
+            if fS.directSolve == 0
+                
+                [Lul,Luu,Up] = lu(Lu);
+                [Lvl,Lvu,Vp] = lu(Lv);
+                fS.Lul = Lul;
+                fS.Luu = Luu;
+                fS.Up  = Up;
+                
+                fS.Lvl = Lvl;
+                fS.Lvu = Lvu;
+                fS.Vp  = Vp;
+                
+            end
+            
+        end
+        flagUpdate = 0; % reset flagUpdate
     end
+    
+    
+    
+    
+    
+    
+    
+    
     
     %% Predictor
     fS.UN = fS.UC;
@@ -248,16 +277,9 @@ fS.t2= t2;
     fS.PN = fS.PC;
     
     [count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS);
-    %[count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolver(t1,t2,count,fS);
     
-    %     [count,Tem2,rhst0] = TempSolver(t1,t2,tem,tembc,x,y,Nxg,Nyg,...
-    %         hx,hy,al,albx,alby,ftem,dtemdt,dtemdx,dtemdy,...
-    %         U1,U2,...
-    %         V1,V2,Tem1,Tem1,ab2,BC,bcp,rhst0,count);
-    %
-    
-    %U2 = fS.u(x,y,t2);
-    %V2 = fS.v(x,y,t2);
+    U2   = fS.u(x,y,t2);
+    V2   = fS.v(x,y,t2);
     Tem2 = fS.tem(x,y,t2);
     
     fS.UN   = U2;
@@ -265,22 +287,22 @@ fS.t2= t2;
     fS.TemN = Tem2;
     
     %if correct>0
-        if tOrder==2
-            fS.rhsuP1 = rhsuC;
-            fS.rhsvP1 = rhsvC;
-        elseif tOrder ==4
-            fS.rhsuP3 = fS.rhsuP2;
-            fS.rhsuP2 = fS.rhsuP1;
-            fS.rhsuP1 = rhsuC;
-            
-            fS.rhsvP3 = fS.rhsvP2;
-            fS.rhsvP2 = fS.rhsvP1;
-            fS.rhsvP1 = rhsvC;
-        end
+    if tOrder==2
+        fS.rhsuP1 = rhsuC;
+        fS.rhsvP1 = rhsvC;
+    elseif tOrder ==4
+        fS.rhsuP3 = fS.rhsuP2;
+        fS.rhsuP2 = fS.rhsuP1;
+        fS.rhsuP1 = rhsuC;
+        
+        fS.rhsvP3 = fS.rhsvP2;
+        fS.rhsvP2 = fS.rhsvP1;
+        fS.rhsvP1 = rhsvC;
+    end
     %end
     
-    P2 = PressureSolver(t2,fS);
-    %P2 = fS.p(x,y,t2);
+    %P2 = PressureSolver(t2,fS);
+    P2 = fS.p(x,y,t2);
     
     fS.PN   = P2;
     
@@ -300,9 +322,7 @@ fS.t2= t2;
         fS.PN   = P2;
     end
     %
-    dte = dt;
-    dt = dtn;
-    
+
     %% update solution
     
     if tOrder==2
@@ -336,9 +356,7 @@ fS.t2= t2;
         fS.VP2 = fS.VP1;
         fS.VP1 = fS.VC;
         fS.VC  = V2;
-        
-        
-        
+            
         fS.PC = P2;
         fS.TemC = Tem2;
               
@@ -346,24 +364,44 @@ fS.t2= t2;
     
     %% update time step $ time integration scheme
     if CFL ~= 0
+
         if mod(n,nadapt) == 1 || nadapt == 1
+            
+            if fS.tOrder==2
+                
+                stabilityReal = 1.6;
+                stabilityImag = 1.28;
+                
+            elseif fS.tOrder==4
+                
+                if fS.tMethod == 1
+                    
+                    stabilityReal = 1.5;
+                    stabilityImag = 1.16;
+                    
+                elseif fS.tMethod == 2
+                    
+                    stabilityReal = 1.;
+                    stabilityImag = 1.2;
+                    
+                end
+                
+                
+            end
+                  
             ilambda = max(max(U2))*(1+2/3)/hx + max(max(V2))*(1+2/3)/hy;
             if max(abs(ad41),abs(ad42)) > 0
                 rlambda = 4*max(mu,al)*(1+1/3)/hx^2 + 4*max(mu,al)*(1+1/3)/hy^2 + 2*(ad41 + ad42*maxgrad)*16;
             else
                 rlambda = 4*max(mu,al)*(1+1/3)/hx^2 + 4*max(mu,al)*(1+1/3)/hy^2;
             end
-            dtn = sqrt(CFL/((ilambda/1.28)^2 + (rlambda/1.6)^2));
-            tntemp = ceil((tend - t2)/dtn);
-            dtn = (tend - t2)/tntemp;
-            
-            preTime = [dtn + dtn^2/dt/2, -dtn^2/dt/2];
-            corrTime = [dtn/2,dtn/2];
-            
+            dt    = sqrt(CFL/((ilambda/stabilityImag)^2 + (rlambda/stabilityReal)^2));
+            tntemp = ceil((tend - t2)/dt);
+            dt    = (tend - t2)/tntemp;
+            fS.dt = dt;
+            flagUpdate = 1;
         end
-        if mod(n,nadapt) == 2
-            preTime = [dtn + dtn^2/dt/2, -dtn^2/dt/2];
-        end
+
     end
     
     

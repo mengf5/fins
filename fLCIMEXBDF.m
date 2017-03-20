@@ -14,7 +14,8 @@ localOrder = 5;
 addTerm = 'L';
 fLCBDF =0 ;
 
-dosplayCoeff = 0;
+displayCoeff = 1;
+
 if nargin == 1
    
     order = varargin{1};
@@ -23,7 +24,7 @@ end
 
 if nargin == 2
    
-    dosplayCoeff = varargin{2};
+    displayCoeff = varargin{2};
    
 end
 
@@ -244,7 +245,7 @@ end
 checkConstDt(xE);
 
 
-if dosplayCoeff == 1
+if displayCoeff == 1
     fprintf('BDF, alpha, beta are:: \n')
     display(x)
     

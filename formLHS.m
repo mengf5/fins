@@ -28,7 +28,7 @@ hy  = fS.hy;
 BC  = fS.BC;
 
 %extOrder   = fS.extOrder;
-imTime     = fS.imTime;
+imTime     = fS.cBI;
 mu         = fS.mu;
 
 % total number of grid points(including ghosts)
