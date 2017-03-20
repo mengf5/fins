@@ -19,6 +19,8 @@ classdef ins < handle
       corrTime           = [];
       imTime             = [];
       dt; dtn; dte;
+      tSpan              = [];
+      t2; % this is the current time 
       
       %% LHS matrix for U,V,P
       Lul; Luu; Up;

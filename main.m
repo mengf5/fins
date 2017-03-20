@@ -109,7 +109,7 @@ if tOrder==2
 end
   
 
-BC = fS.BC;
+% BC = fS.BC;
 
 Nxg = fS.Nxg;
 Nyg = fS.Nyg;
@@ -183,8 +183,9 @@ fS.UN = fS.UP1;
 fS.VN = fS.VP1;
 fS.PN = fS.PP1;
 fS.TemN = fS.TemP1;
+[~,~,~,rhsuP1,rhsvP1] = VelocitySolverNew(tP1,tP1,count,fS);
 
-[~,~,~,rhsuP1,rhsvP1] = VelocitySolver(tP1,tP1,count,fS);
+%[~,~,~,rhsuP1,rhsvP1] = VelocitySolver(tP1,tP1,count,fS);
 
 fS.rhsuP1=rhsuP1;
 fS.rhsvP1=rhsvP1;
@@ -195,7 +196,7 @@ if tOrder==4
     fS.VN = fS.VP2;
     fS.PN = fS.PP2;
     fS.TemN = fS.TemP2;
-    [~,~,~,rhsuP2,rhsvP2] = VelocitySolver(tP2,tP2,count,fS);
+    [~,~,~,rhsuP2,rhsvP2] = VelocitySolverNew(tP2,tP2,count,fS);
     fS.rhsuP2=rhsuP2;
     fS.rhsvP2=rhsvP2;
 
@@ -203,7 +204,7 @@ if tOrder==4
     fS.VN = fS.VP3;
     fS.PN = fS.PP3;
     fS.TemN = fS.TemP3;
-    [~,~,~,rhsuP3,rhsvP3] = VelocitySolver(tP3,tP3,count,fS);
+    [~,~,~,rhsuP3,rhsvP3] = VelocitySolverNew(tP3,tP3,count,fS);
     fS.rhsuP3=rhsuP3;
     fS.rhsvP3=rhsvP3;
     
@@ -213,18 +214,17 @@ end
 %--------------------------------------------------------------------------
 tic
 t1 = tC-dt;
-t = [];
 dtn = dt; 
 dte = dt;
 n = 1;
-t2= 0;
 
 % if fS.makeMovie == 1
 %     surf(UN);
 %     axis tight manual
 %     set(gca,'nextplot','replacechildren'); 
 % end
-
+t2 = t1+dt; 
+t  = [textr,tP3,tP2,tP1,tC];
 
 while (t2 - tend) < eps-dt/4
     n = n+1;
@@ -232,15 +232,23 @@ while (t2 - tend) < eps-dt/4
     count = 1;
     t1 = t1 + dt;
     t2 = t1 + dtn;%the time of stage2 in each time step
+fS.t2= t2;
 
     t = [t t2];
-
+    
+    if size(t) < 5
+        fS.tSpan = t;
+    else
+        fS.tSpan = t(end-4:end);
+    end
+    
     %% Predictor
     fS.UN = fS.UC;
     fS.VN = fS.VC;
     fS.PN = fS.PC;
     
-    [count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolver(t1,t2,count,fS);
+    [count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS);
+    %[count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolver(t1,t2,count,fS);
     
     %     [count,Tem2,rhst0] = TempSolver(t1,t2,tem,tembc,x,y,Nxg,Nyg,...
     %         hx,hy,al,albx,alby,ftem,dtemdt,dtemdx,dtemdy,...
