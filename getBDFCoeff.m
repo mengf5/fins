@@ -46,7 +46,6 @@ elseif fLCBDF == 1;
     
 end
 
-cA  = dt*cA; 
 cBI = dt*cBI;
 cBE = dt*cBE;
 

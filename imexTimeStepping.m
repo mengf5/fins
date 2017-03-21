@@ -9,15 +9,15 @@ Z = X+1i*Y; % complex number
 order = 4;
 fixStep=0;
 localOrder = 5;
-addTerm = 'R';
-newTimeLevel = 2;
+addTerm = 'L';
+newTimeLevel = 3;
 fLCBDF =0 ;
 
 %% IMEXBDF
 
 for k = 1:5
     
-    r = 1 + (k-3)*0.2;
+    r = 1 + (k-3)*0.2*1;
     %r = 1;
     
     lC = ['c','b','r','m','k'];
@@ -227,9 +227,9 @@ end
 %
 %
 % legend(legendStr);
-titleStr = ['newTimeLevel',num2str(newTimeLevel)];
+titleStr = ['newTimeLevel',num2str(newTimeLevel),'fLC',num2str(fLCBDF)];
 title(titleStr);
-%print(titleStr,'-dpng')
+print(titleStr,'-dpng')
 
 
 end

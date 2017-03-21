@@ -13,6 +13,8 @@ nadapt    = fS.numberOfAdapt;
 tOrder    = fS.tOrder;
 tExplicit = fS. tExplicit;
 %extOrder  = fS.extOrder;
+ad41 = fS.ad41;
+ad42 = fS.ad42;
 
 if fS.makeMovie == 1
     movieU = VideoWriter('movieU.avi');
@@ -224,7 +226,6 @@ n = 1;
 t2 = tC; 
 t  = [textr,tP3,tP2,tP1,tC];
 
-
 flagUpdate = 0;
 
 while (t2 - tend) < eps-dt/4
@@ -266,7 +267,11 @@ while (t2 - tend) < eps-dt/4
             end
             
         end
-        flagUpdate = 0; % reset flagUpdate
+        if nUpdate < 4
+            nUpdate = nUpdate+1;
+        elseif nUpdate == 4
+            flagUpdate = 0; % reset flagUpdate
+        end
     end
      
     %% Predictor
@@ -315,7 +320,7 @@ while (t2 - tend) < eps-dt/4
     
     for k = 1:correct
         
-        [count,U2,V2] = VelocitySolver(t2,t2,count,fS);
+        [count,U2,V2] = VelocitySolverNew(t2,t2,count,fS);
         
         Tem2 = fS.tem(x,y,t2);
         
@@ -323,8 +328,8 @@ while (t2 - tend) < eps-dt/4
         fS.VN   = V2;
         fS.TemN = Tem2;
         
-        P2 = PressureSolver(t2,fS);
-        %P2 = fS.p(x,y,t2);
+        %P2 = PressureSolver(t2,fS);
+        P2 = fS.p(x,y,t2);
         
         fS.PN   = P2;
     end
@@ -395,7 +400,7 @@ while (t2 - tend) < eps-dt/4
                 
                 
             end
-                  
+            
             ilambda = max(max(U2))*(1+2/3)/hx + max(max(V2))*(1+2/3)/hy;
             if max(abs(ad41),abs(ad42)) > 0
                 rlambda = 4*max(mu,al)*(1+1/3)/hx^2 + 4*max(mu,al)*(1+1/3)/hy^2 + 2*(ad41 + ad42*maxgrad)*16;
@@ -403,10 +408,13 @@ while (t2 - tend) < eps-dt/4
                 rlambda = 4*max(mu,al)*(1+1/3)/hx^2 + 4*max(mu,al)*(1+1/3)/hy^2;
             end
             dt    = sqrt(CFL/((ilambda/stabilityImag)^2 + (rlambda/stabilityReal)^2));
+            
+            %dt = dt *.5;
             tntemp = ceil((tend - t2)/dt);
             dt    = (tend - t2)/tntemp;
             fS.dt = dt;
             flagUpdate = 1;
+            nUpdate    = 0;
         end
 
     end
@@ -718,12 +726,15 @@ end
     pl = figure(1);
     %t = linspace(dt,tend,tn-1);
     label = 'Error vs t';
-    plot(t,log10(err(1,3:end)),'LineWidth',2)
+    
+    t = t(4:end);
+    
+    plot(t,log10(err(1,:)),'LineWidth',2)
     hold on
-    plot(t,log10(err(2,3:end)),'r--','LineWidth',2)
+    plot(t,log10(err(2,:)),'r--','LineWidth',2)
     %plot(t,log10(err(3,3:end)),'k','LineWidth',2)
-    plot(t,log10(err(4,3:end)),'g','LineWidth',2)
-    plot(t,log10(abs(diverr(3:end))),'m','LineWidth',2)
+    plot(t,log10(err(4,:)),'g','LineWidth',2)
+    plot(t,log10(abs(diverr(:))),'m','LineWidth',2)
 
     set(gca, 'FontSize', 20)
     xlabel('t');
@@ -794,10 +805,11 @@ print(pl, '-dpng',[fS.path 'Error' '.png']);
 % legend('U','V')
 % print(pl, '-depsc',[fS.path 'peak' '.eps']);
 
-
+if fS.makeMovie == 1
 close(movieU);
 close(movieV);
 close(movieP);
+end
 
 %no temperature
 for i = 1:2

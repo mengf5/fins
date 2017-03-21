@@ -19,9 +19,9 @@ classdef ins < handle
       CFLfix             =  .9;
       numberOfCorrector  =  0;
       numberOfAdapt      =  0;
-      preTime            = [];
-      corrTime           = [];
-      imTime             = [];
+%      preTime            = [];
+%      corrTime           = [];
+%      imTime             = [];
       dt; dtn; dte;
       tSpan              = [];
       t2; % this is the current time 
@@ -214,26 +214,26 @@ classdef ins < handle
            
            if fS.tOrder==2
                
-               fS.preTime  = [3/2*fS.dt,-1/2*fS.dt];
-               fS.corrTime = [1/2*fS.dt, 1/2*fS.dt];
+%               fS.preTime  = [3/2*fS.dt,-1/2*fS.dt];
+%               fS.corrTime = [1/2*fS.dt, 1/2*fS.dt];
            
            elseif fS.tOrder==4
                if fS.tMethod==1
                    %fS.preTime =
                    %[55/24*fS.dt,-59/24*fS.dt,37/24*fS.dt,-3/8*fS.dt]; this
                    % is ab 4
-                   fS.preTime = [23/12*fS.dt,-4/3*fS.dt,5/12*fS.dt,0]; 
+                   %fS.preTime = [23/12*fS.dt,-4/3*fS.dt,5/12*fS.dt,0]; 
                    % this is ab3
                    
-                   fS.corrTime =[3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
+                   %fS.corrTime =[3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
                    
                elseif fS.tMethod==2
                    
                    fS.cBE = 12/25*[4,-6,4,-1]*fS.dt;
-                   fS.preTime = fS.cBE;
+                   %fS.preTime = fS.cBE;
                    
                    fS.cBI = 12/25*fS.dt;
-                   fS.corrTime = [fS.cBI,0,0,0];
+                   %fS.corrTime = [fS.cBI,0,0,0];
                    
                    fS.cA  = 12/25*[-4,3,-4/3,1/4];
                    
@@ -242,13 +242,13 @@ classdef ins < handle
            
            if fS.tExplicit==0
                if fS.tOrder==2
-                   fS.imTime = [1/2*fS.dt, 1/2*fS.dt];
+                   %fS.imTime = [1/2*fS.dt, 1/2*fS.dt];
                elseif fS.tOrder==4
                    if fS.tMethod==1                       
-                       fS.imTime = [3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
+                       %fS.imTime = [3/8*fS.dt,19/24*fS.dt,-5/24*fS.dt,1/24*fS.dt];
                    elseif fS.tMethod==2
                        fS.cBI = 12/25*fS.dt;
-                       fS.imTime = fS.cBI;
+                       %fS.imTime = fS.cBI;
                    end
                end
            end
