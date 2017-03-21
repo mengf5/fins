@@ -73,6 +73,7 @@ for axis = 0:1
         
         [allBcPts,lAllBcPts] = getIndex(fS,bcxStart,bcxEnd,bcyStart,bcyEnd);
         lhsU = setZero(lhsU,M,allBcPts,lAllBcPts);
+        lhsV = setZero(lhsV,M,allBcPts,lAllBcPts);
         
         switch localBC
             

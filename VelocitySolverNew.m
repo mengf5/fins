@@ -630,6 +630,15 @@ elseif tExplicit == 0
             px = (sideX==0)*ia + (sideX==1)*ib;
             py = (sideY==0)*ja + (sideY==1)*jb;
             
+%             n = 1;
+%             for xShift = 1:2
+%                 for yShift = 1:2
+%                
+%                     pxS(n,1) = px - (-1)^sideX * 1;
+%                     pyS(n,1) = py - (-1)^sideY * 1; 
+%             n = n+1;
+%                 end
+%             end
             px1 = px - (-1)^sideX * 1;
             py1 = py - (-1)^sideY * 1;
             
@@ -682,64 +691,65 @@ elseif tExplicit == 0
                     
                 case 3
                     
-                    px1E=[];
-                    px2E=[];
-                    px3E=[];
-                    px4E=[];
+                    rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
+                    rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
                     
-                    py1E=[];
-                    py2E=[];
-                    py3E=[];
-                    py4E=[];
+                    rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
+                    rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
                     
-                    coeff=1;
+                    rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
+                    rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
                     
+                    rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
+                    rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
                     
                     
             end
             
-            px1 = [px1,px1E];
-            px2 = [px2,px2E];
-            px3 = [px3,px3E];
-            px4 = [px4,px4E];
-            
-            py1 = [py1,py1E];
-            py2 = [py2,py2E];
-            py3 = [py3,py3E];
-            py4 = [py4,py4E];
-            
-            for i = 1:length(px1)
-                
-            end
+%             px1 = [px1,px1E];
+%             px2 = [px2,px2E];
+%             px3 = [px3,px3E];
+%             px4 = [px4,px4E];
+%             
+%             py1 = [py1,py1E];
+%             py2 = [py2,py2E];
+%             py3 = [py3,py3E];
+%             py4 = [py4,py4E];
+%             
+%             for i = 1:length(px1)
+%                 
+%             end
             
         end
     end
     
     % solve the problem
     %-----------------------------------------------------------------------------
-    U = solveIm(Nxg,Nyg,rhsU,dir,directSolve);
+    axis = 0;
+    U = solveIm(fS,Nxg,Nyg,rhsU,axis,directSolve);
     
-    %fix the ghost points for V
+    %fix the second ghost line for V for BC 1
     %----------------------------------------------------------------------------
-    for axis = 0:1
-        for side = 0:1
-            switch localBC
-                case 1
-                    
-                    pos = 2;
-                    
-                    [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-                    
-                    V(bcx,bcy) = getCompUxx(x(bcx,bcy),y(bcx,bcy),t2);
-                    
-            end
+    
+    axis = 1;
+    for side = 0:1
+        switch localBC
+            case 1
+                
+                pos = 2;
+                
+                [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+                
+                rhsV(bcx,bcy)  = -getUxy(U,bcx,bcy,hx,hy,axis,side,pos);
+                
         end
     end
     
     
     % solve the problem
     %-----------------------------------------------------------------------------
-    V = solveIm(Nxg,Nyg,rhsU,dir,directSolve);
+    axis = 1;
+    V = solveIm(fS,Nxg,Nyg,rhsV,axis,directSolve);
     
     
     
@@ -881,7 +891,7 @@ wm2 = bm2./(bm1+bm2);
 
 end
 
-function W = solveIm(Nxg,Nyg,U,dir,directSolve)
+function W = solveIm(fS,Nxg,Nyg,U,axis,directSolve)
 %% reshape to the rhs vector
 rhsu =zeros(Nxg*Nyg,1);
 
@@ -896,11 +906,11 @@ end
 %% get the LHS matrix
 if directSolve == 0
     
-    if dir == 0
+    if axis == 0
         Ll = fS.Lul;
         Lu = fS.Luu;
         p  = fS.Up;
-    elseif dir ==1
+    elseif axis ==1
         Ll = fS.Lvl;
         Lu = fS.Lvu;
         p  = fS.Vp;
@@ -910,12 +920,12 @@ if directSolve == 0
     
 elseif directSolve == 1
     
-    if dir == 0
+    if axis == 0
         
         Lu = fS.Lu;
         Ut  = Lu\rhsu;
         
-    elseif dir ==1
+    elseif axis ==1
         
         Lu = fS.Lv;
         Ut  = Lu\rhsu;

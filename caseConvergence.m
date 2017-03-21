@@ -21,8 +21,10 @@ fS.directSolve = 0;
 fS.plotting = 0;
 fS.makeMovie =0;
 
-fS.BC = [1 1;1 1];
-fS.twilightZone = 8; % 1 for trigSpolyT, 2 for poly2
+fS.correct = 0;
+
+fS.BC = [3 3;3 3];
+fS.twilightZone = 2; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else

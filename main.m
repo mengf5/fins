@@ -176,8 +176,6 @@ fS.PN = fS.PP1;
 fS.TemN = fS.TemP1;
 [~,~,~,rhsuP1,rhsvP1] = VelocitySolverNew(tP1,tP1,count,fS);
 
-%[~,~,~,rhsuP1,rhsvP1] = VelocitySolver(tP1,tP1,count,fS);
-
 fS.rhsuP1=rhsuP1;
 fS.rhsvP1=rhsvP1;
 
@@ -188,6 +186,7 @@ if tOrder==4
     fS.PN = fS.PP2;
     fS.TemN = fS.TemP2;
     [~,~,~,rhsuP2,rhsvP2] = VelocitySolverNew(tP2,tP2,count,fS);
+     
     fS.rhsuP2=rhsuP2;
     fS.rhsvP2=rhsvP2;
 
@@ -196,6 +195,13 @@ if tOrder==4
     fS.PN = fS.PP3;
     fS.TemN = fS.TemP3;
     [~,~,~,rhsuP3,rhsvP3] = VelocitySolverNew(tP3,tP3,count,fS);
+
+    % check if the get rhs part is broken comparing to the previous version
+    % okay 03/20/17
+    %     [~,~,~,rhsuP3C,rhsvP3C] = VelocitySolver(tP3,tP3,count,fS);
+    %     max(max(abs(rhsuP3C-rhsuP3)))
+    %     max(max(abs(rhsvP3C-rhsvP3)))
+    
     fS.rhsuP3=rhsuP3;
     fS.rhsvP3=rhsvP3;
     
@@ -262,15 +268,7 @@ while (t2 - tend) < eps-dt/4
         end
         flagUpdate = 0; % reset flagUpdate
     end
-    
-    
-    
-    
-    
-    
-    
-    
-    
+     
     %% Predictor
     fS.UN = fS.UC;
     fS.VN = fS.VC;
@@ -278,8 +276,17 @@ while (t2 - tend) < eps-dt/4
     
     [count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS);
     
-    U2   = fS.u(x,y,t2);
-    V2   = fS.v(x,y,t2);
+%     [count,U2C,V2C,rhsuCC,rhsvCC,maxgrad] = VelocitySolverNew(t1,t2,0,fS);
+%     
+%     max(max(abs(rhsuCC-rhsuC)))
+%     max(max(abs(rhsvCC-rhsvC)))
+    
+%     U2E   = fS.u(x,y,t2);
+%     V2E   = fS.v(x,y,t2);
+%     
+%     max(max(abs(U2E-U2)))
+%     max(max(abs(V2E-V2)))
+
     Tem2 = fS.tem(x,y,t2);
     
     fS.UN   = U2;
