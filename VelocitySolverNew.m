@@ -39,6 +39,8 @@ x    = fS.x;
 y    = fS.y;
 Nxg    = fS.Nxg;
 Nyg    = fS.Nyg;
+Nx    = fS.Nx;
+%Ny    = fS.Ny;
 hx   = fS.hx;
 hy   = fS.hy;
 

@@ -2,7 +2,7 @@ function caseConvergence(varargin)
 
 % clearvars -except err rate
 close all
-nameappenSetup = 'KH';
+nameappenSetup = '4th';
 %8378 for test
 
 fS     =ins;
@@ -10,9 +10,9 @@ fS.tEnd=4.1;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
-fS.CFL=0;
+fS.CFL=0.9;
 fS.numberOfCorrector=1;
-fS.numberOfAdapt=10;
+fS.numberOfAdapt=5000;
 fS.extOrder=6;
 fS.uvSwitch=0;
 fS.CFLfix=.9;
@@ -20,8 +20,6 @@ fS.directSolve = 0;
 
 fS.plotting = 0;
 fS.makeMovie =0;
-
-fS.correct = 0;
 
 fS.BC = [3 3;3 3];
 fS.twilightZone = 2; % 1 for trigSpolyT, 2 for poly2
@@ -35,11 +33,11 @@ fS.alpha = 0.01;
 fS.WENO = 1;
 fS.uw = 0;
 
-gridx = [76 151 301];
-gridy = [76 151 301];
+gridx = [76 151];
+gridy = [76 151];
 
-gridx = [5];
-gridy = [6];
+% gridx = [50];
+% gridy = [60];
 
 if gridx(end) > 200 && gridy(end) > 200
     fS.directSolve = 1;    
@@ -62,9 +60,9 @@ if fS.BC==2
     fS.g                  =  0;                                           % gravity g
     %par = [0,0,0,2,1,0];
 else
-    fS.al                 =  0.0001;                                         % thermal diffusitity, alpha
+    fS.al                 =  0.01;                                         % thermal diffusitity, alpha
     fS.K                  =  0;                                           % thermal conductivity K
-    fS.mu                 =  0.0001;                                         % Kinematic viscosity nu
+    fS.mu                 =  0.01;                                         % Kinematic viscosity nu
     fS.tref               =  2;                                           % Treference T_{\infty};
     fS.beta               =  1;                                           % thermal expansion
     fS.g                  =  0;                                           % gravity g
@@ -152,6 +150,11 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
                 f(3) = (x^2+1/2*x*y+y^2-1)*(1+2*t+2*t^2);
                 f(4) = (x^2+2*x*y+y^2)*(1+2*t+2*t^2);
                 
+%                 f(1) = (x^2+2*x*y+y^2)*(1);
+%                 f(2) = (-x^2-2*x*y-y^2)*(1);
+%                 f(3) = (x^2+1/2*x*y+y^2-1)*(1);
+%                 f(4) = (x^2+2*x*y+y^2)*(1);
+                
             end
         end
     case 3
@@ -160,10 +163,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
         f(3) = (x^3+1/2*x*y+y^3-1)*(1+t);
         f(4) = (2+x+y/2+x^2/2+y^2/4)*(1+t);
     case 4 %% trig
-        f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t));
-        f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t));
-        f(3) = (sin(pi*x)*sin(pi*y))*(cos(pi*t));
-        f(4) = eps.*(sin(pi*y)*sin(pi*x))*(cos(pi*t)+1);
+        f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t*0.2));
+        f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t*0.2));
+        f(3) = (sin(pi*x)*sin(pi*y))*(cos(pi*t*0.2));
+        f(4) = eps.*(sin(pi*y)*sin(pi*x))*(cos(pi*t*0.2)+1);
     case 5  %% trig u,v always larger to 0
         f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t)+2)+4;
         f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t)+2)+4;

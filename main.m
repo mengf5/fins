@@ -286,11 +286,11 @@ while (t2 - tend) < eps-dt/4
 %     max(max(abs(rhsuCC-rhsuC)))
 %     max(max(abs(rhsvCC-rhsvC)))
     
-%     U2E   = fS.u(x,y,t2);
-%     V2E   = fS.v(x,y,t2);
-%     
-%     max(max(abs(U2E-U2)))
-%     max(max(abs(V2E-V2)))
+    U2E   = fS.u(x,y,t2);
+    V2E   = fS.v(x,y,t2);
+    
+    max(max(abs(U2E-U2)))
+    max(max(abs(V2E-V2)))
 
     Tem2 = fS.tem(x,y,t2);
     
