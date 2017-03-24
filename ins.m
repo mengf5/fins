@@ -218,6 +218,7 @@ classdef ins < handle
 %               fS.corrTime = [1/2*fS.dt, 1/2*fS.dt];
            
            elseif fS.tOrder==4
+               
                if fS.tMethod==1
                    %fS.preTime =
                    %[55/24*fS.dt,-59/24*fS.dt,37/24*fS.dt,-3/8*fS.dt]; this
@@ -261,5 +262,7 @@ classdef ins < handle
        %        function r = multiplyBy(obj,n)
        %            r = [obj.Ny] * n;
        %        end
-   end
+   
+
+  end 
 end

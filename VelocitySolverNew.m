@@ -578,14 +578,18 @@ elseif tExplicit == 0
                     pos = 2;
                     
                     [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-                    
+
+		    iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
+		    jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+
+		    
                     if axis == 0
-                        rhsU(bcx,bcy)  = -getUxy(V,bcx,bcy,hx,hy,axis,side,pos);%getCompUxy(V,fS,bcx,bcy,axis,side,pos);
-                        rhsV(bcx,bcy)  = getZero(bcx,bcy);
+                      rhsU(bcx,bcy)  = -getUxy(V,iB,jB,hx,hy,axis);%getCompUxy(V,fS,bcx,bcy,axis,side,pos);
+                      rhsV(bcx,bcy)  = getZero(bcx,bcy);
                         
                     elseif axis == 1
                         rhsU(bcx,bcy)  = getZero(bcx,bcy);
-                        rhsV(bcx,bcy)  = -getUxy(U,bcx,bcy,hx,hy,axis,side,pos);
+                        rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy,axis);
                         
                     end
                     
@@ -623,25 +627,15 @@ elseif tExplicit == 0
         end
     end
     
-    
-    
-    % now fix em corner points
-    %----------------------------------------------------------------
+%--------------------------------------------------------------------------
+% now fix em corner points
+%--------------------------------------------------------------------------
     for sideX = 0:1
         for sideY = 0:1
             
             px = (sideX==0)*ia + (sideX==1)*ib;
             py = (sideY==0)*ja + (sideY==1)*jb;
             
-%             n = 1;
-%             for xShift = 1:2
-%                 for yShift = 1:2
-%                
-%                     pxS(n,1) = px - (-1)^sideX * 1;
-%                     pyS(n,1) = py - (-1)^sideY * 1; 
-%             n = n+1;
-%                 end
-%             end
             px1 = px - (-1)^sideX * 1;
             py1 = py - (-1)^sideY * 1;
             
@@ -653,9 +647,24 @@ elseif tExplicit == 0
             
             px4 = px - (-1)^sideX * 2;
             py4 = py - (-1)^sideY * 2;
-            
+
+	    chooseBC(1) = BC(1,1+sideX);
+	    chooseBC(2) = BC(2,1+sideY);
+	    
+	    if max( chooseBC ) < 4
+	      
+	      localBC =  max( chooseBC );
+	      
+	    else 
+	      
+	      fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+	      fprintf('proceed with extreme caution \n');
+	      pause;
+	      
+	    end
+	    
             switch localBC
-                
+                   
                 case 1
                     
                     for i = 1:3
@@ -673,24 +682,6 @@ elseif tExplicit == 0
                     end
                     
                     coeff=[1,-15/4,3,-1/4];
-                    
-                    
-                case 2
-                    
-                    px1E = px1 + (-1)^sideX*(Nx - 1);
-                    py1E = py1 ;
-                    
-                    px2E = px2 + (-1)^sideX*(Nx - 1);
-                    py2E = py2 ;
-                    
-                    px3E = px3 + (-1)^sideX*(Nx - 1);
-                    py3E = py3 ;
-                    
-                    px4E = px4 + (-1)^sideX*(Nx - 1);
-                    py4E = py4 ;
-                    
-                    coeff=[1,-1];
-                    
                     
                 case 3
                     
@@ -742,8 +733,10 @@ elseif tExplicit == 0
                 pos = 2;
                 
                 [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-                
-                rhsV(bcx,bcy)  = -getUxy(U,bcx,bcy,hx,hy,axis,side,pos);
+                iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
+		jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+
+                rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy,axis);
                 
         end
     end
@@ -1188,10 +1181,8 @@ end
 % 
 % end
 
-function approxUxy = getUxy(U,bcx,bcy,hx,hy,axis,side,pos)
+function approxUxy = getUxy(U,iB,jB,hx,hy,axis)
 
-iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
-jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
 
 approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ...
             +8*(-U(iB+2,jB+1) + 8*U(iB+1,jB+1) - 8*U(iB-1,jB+1) + U(iB-2,jB+1)) ...

@@ -202,6 +202,7 @@ end
 %left - right- bottom -top
 % point A is contaminated by the bottom boundary condition
 
+%----------------------------------------------------------------
 % now fix em corner points
 %----------------------------------------------------------------
 for sideX = 0:1
@@ -226,7 +227,22 @@ for sideX = 0:1
         px2Index = getIndex(fS,px2,px2,py2,py2);
         px3Index = getIndex(fS,px3,px3,py3,py3);
         px4Index = getIndex(fS,px4,px4,py4,py4);
+
+	chooseBC(1) = BC(1,1+sideX);
+	chooseBC(2) = BC(2,1+sideY);
+	
+    if max( chooseBC ) < 4
         
+        [localBC,whichBC] =  max( chooseBC );
+        axisBC = (whichBC -1);
+        
+    else
+        fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+        fprintf('proceed with extreme caution \n');
+        pause;
+        
+    end
+
         switch localBC
             
             case 1
@@ -249,20 +265,24 @@ for sideX = 0:1
                 
                 
             case 2
-                
-                px1E = px1 + (-1)^sideX*(Nx - 1);
-                py1E = py1 ;
-                
-                px2E = px2 + (-1)^sideX*(Nx - 1);
-                py2E = py2 ;
-                
-                px3E = px3 + (-1)^sideX*(Nx - 1);
-                py3E = py3 ;
-                
-                px4E = px4 + (-1)^sideX*(Nx - 1);
-                py4E = py4 ;
-                
-                coeff=[1,-1];
+
+	      stripeMatch = Nx*(axisBC==0) + Ny*(axisBC==1);
+	      
+	      side = sideX*(axisBC==0) + sideY*(axisBC==1);
+	      
+              px1E = px1 + (-1)^side*(stripeMatch - 1);
+              py1E = py1 ;
+              
+              px2E = px2 + (-1)^side*(stripeMatch - 1);
+              py2E = py2 ;
+              
+              px3E = px3 + (-1)^side*(stripeMatch - 1);
+              py3E = py3 ;
+              
+              px4E = px4 + (-1)^side*(stripeMatch - 1);
+              py4E = py4 ;
+              
+              coeff=[1,-1];
                 
                 
             case 3

@@ -279,6 +279,32 @@ for sideX = 0:1
 end
 
 
+flagAddRow = 1;
+
+for axis = 0:1
+  for side = 0:1
+    
+    localBC = BC(axis+1,side+1);
+    
+    if localBC > 2
+      flagAddRow = 0;
+    end
+    
+  end
+end
+
+if flagAddRow == 1
+  
+  comp = ones(1,M);
+  lhsP = [lhsP;comp];
+
+  comp = ones(1,M+1)';
+  lhsP = [lhsP comp];
+
+  lhsP(end,end) = 0;
+  
+end
+
 end
 
 
