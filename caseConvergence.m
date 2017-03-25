@@ -10,7 +10,7 @@ fS.tEnd=4.1;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
-fS.CFL=0.9;
+fS.CFL=0;
 fS.numberOfCorrector=1;
 fS.numberOfAdapt=5000;
 fS.extOrder=6;
@@ -21,8 +21,8 @@ fS.directSolve = 0;
 fS.plotting = 0;
 fS.makeMovie =0;
 
-fS.BC = [3 3;3 3];
-fS.twilightZone = 2; % 1 for trigSpolyT, 2 for poly2
+fS.BC = [2 2;2 2];
+fS.twilightZone = 4; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else
@@ -36,12 +36,8 @@ fS.uw = 0;
 gridx = [76 151];
 gridy = [76 151];
 
-% gridx = [50];
-% gridy = [60];
-
-if gridx(end) > 200 && gridy(end) > 200
-    fS.directSolve = 1;    
-end
+gridx = [50];
+gridy = [50];
 
 %with cfl =.9, tw == 4, tEnd=1.1, gridx=gridy = 401; This takes roughly 9 hours with direct solve
 
@@ -74,7 +70,16 @@ end
 
 for i=1:nargin
     line = varargin{i};
+    
+    
+    if(strncmp(line,'-Nx=',4))
+        gridx = sscanf(varargin{i},'-Nx=%i');
+    end
 
+    if(strncmp(line,'-Ny=',4))
+        gridy = sscanf(varargin{i},'-Ny=%i');
+    end
+    
     if(strncmp(line,'-tend=',6))
         fS.tEnd = sscanf(varargin{i},'-tend=%e');
     end
@@ -102,6 +107,12 @@ for i=1:nargin
     end
 
 end
+
+
+if gridx(end) > 200 && gridy(end) > 200
+    fS.directSolve = 1;    
+end
+
 
 if fS.cons == 1
     for i=1:nargin

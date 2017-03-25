@@ -10,6 +10,7 @@ function P = PressureSolverNew(t2,fS)
 beta  = fS.beta;
 alpha = fS.alpha;
 
+BC = fS.BC;
 g    = fS.g;
 mubx = fS.mubx;
 muby = fS.muby;
@@ -30,7 +31,6 @@ UN   = fS.UN;
 VN   = fS.VN;
 TemN = fS.TemN;
 
-
 p  = fS.p;
 % fx = fS.fx;
 % fy = fS.fy;
@@ -43,6 +43,11 @@ Lpl = fS.Lpl;
 Lpu = fS.Lpu;
 Pp  = fS.Pp;
 
+
+ia = fS.ia;
+ib = fS.ib;
+ja = fS.ja;
+jb = fS.jb;
 
 P    = zeros(Nxg,Nyg);
 RHSp = zeros(Nxg,Nyg);
@@ -88,11 +93,11 @@ elseif tw == 0
 end
 
 
-divergence = getUx(UN,i,j,axisX,hx) + getUx(VN,i,j,axisY,hx);
+divergence = getUx(UN,i,j,axisX,hx) + getUx(VN,i,j,axisY,hy);
 
-RHSp(i,j) = - getUxx(UN,i,j,axisX,hx).^2 ...
-	    - getUx(UN,i,j,axisY,hy).* getUx(VN,i,j,axisX,hx) ...
-	    - getUxx(VN,i,j,axisY,hy).^2 ...
+RHSp(i,j) = - getUx(UN,i,j,axisX,hx).^2 ...
+	    - 2*getUx(UN,i,j,axisY,hy).* getUx(VN,i,j,axisX,hx) ...
+	    - getUx(VN,i,j,axisY,hy).^2 ...
 	    + forcingTerms ...
 	    + beta*g*getUx(TemN,i,j,axisY,hy) ...
 	    + cdx*divergence;
@@ -122,7 +127,7 @@ for axis = 0:1
                     
       case 3
         % p = p(t)
-        for pos = 1:2;
+        for pos = 0:2;
           
           [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
           
@@ -235,13 +240,16 @@ elseif fS.directSolve == 1
     P2n = Lp\(RHSimp');
 end
 
+for i = 1:Nxg
+    P(i,:) = P2n((i-1)*Nyg+1:i*Nyg);
+end
 
 end
 
 
 
 
-function approxUx = getCompPx(U,V,fS,bcx,bcy,axis,side,pos)
+function approxPx = getCompPx(U,V,fS,bcx,bcy,axis,side,pos)
 
 tw = fS.tw;
 mu = fS.mu;
@@ -260,8 +268,8 @@ approxPx = 0;
 
 if tw > 0
 
-    u = fS.u    
-    v = fS.v    
+    u = fS.u;    
+    v = fS.v;   
   
   if axis == 0
     dudt  =   fS.dudt;    
@@ -278,7 +286,7 @@ if tw > 0
     TemN = fS.TemN;
     tref = fS.ref;
     
-    approxPx =  beta*g*(TemN(i,j)-tref);
+    approxPx =  beta*g*(TemN(iB,jB)-tref);
 
     
 
@@ -300,17 +308,17 @@ end
 
   end
 
-approxPx = approxPx + getCurlCurl(U,V,iB,jB,axis,hx,hy) + f(x(iB,jB),y(iB,jB),t2);
+approxPx = approxPx + mu*getCurlCurl(U,V,iB,jB,axis,hx,hy) + f(x(iB,jB),y(iB,jB),t2);
     
 end
 
 
-function approxCurlCurl = getCurlCurl(U,V,iB,jB,axis,hx,hy);
+function approxCC = getCurlCurl(U,V,iB,jB,axis,hx,hy)
 
   uCross = U*(axis==1) + V*(axis==0);
   uD     = U*(axis==0) + V*(axis==1);
   
-  getUxy(uCross,iB,jB,hx,hy,axis) + getUxx(U,iB,jB,axis,h)
+  approxCC = getUxy(uCross,iB,jB,hx,hy,axis) + getUxx(U,iB,jB,axis,h);
   
 end
 
@@ -336,14 +344,14 @@ xShift =   (axis==0);
 yShift =   (axis==1);
 
 approxUx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
-            + 16* U(iB + xShift, jB + yShift) + ...
-            (-1)* U(iB - xShift*2, jB - yShift*2) ...
-            + 16* U(iB - xShift, jB - yShift)  ...
+            + 8 * U(iB + xShift, jB + yShift) + ...
+            (+1)* U(iB - xShift*2, jB - yShift*2) ...
+             -8 * U(iB - xShift, jB - yShift)  ...
             )/(12*h);
 end
 
 
-function approxUxy = getUxy(U,iB,jB,hx,hy,axis)
+function approxUxy = getUxy(U,iB,jB,hx,hy)
 
 
 approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ...

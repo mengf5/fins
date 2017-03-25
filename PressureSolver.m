@@ -48,7 +48,7 @@ Pp  = fS.Pp;
 
 P = zeros(Nxg,Nyg);
 RHSp = zeros(Nxg,Nyg);
-
+BC = 1;
 if BC == 1 || BC == 6
     
     

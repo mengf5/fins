@@ -311,11 +311,11 @@ end
 function L = setPoission(L,hx,hy,Nyg,M,pts,lPts)
 
 % get the coeffcients for the laplacian dxx + dyy in fourth order
-coeffC  =  (30/(12*hy^2)+30/(12*hx^2)) * ones(1,lPts);
-coeffY1 = -16/(12*hy^2)  * ones(1,lPts);
-coeffY2 = ( 1/(12*hy^2)) * ones(1,lPts);
-coeffX1 = -16/(12*hx^2)  * ones(1,lPts);
-coeffX2 = ( 1/(12*hx^2)) * ones(1,lPts);
+coeffC  =  -(30/(12*hy^2)+30/(12*hx^2)) * ones(1,lPts);
+coeffY1 = 16/(12*hy^2)  * ones(1,lPts);
+coeffY2 = -( 1/(12*hy^2)) * ones(1,lPts);
+coeffX1 = 16/(12*hx^2)  * ones(1,lPts);
+coeffX2 = -( 1/(12*hx^2)) * ones(1,lPts);
 
 % put them o the corresponding locations in the sparse matrx
 L = L + sparse(pts,pts,coeffC,M,M);

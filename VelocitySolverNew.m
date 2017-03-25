@@ -142,8 +142,8 @@ for axis =0:1
     localBC = BC(axis+1,side);
     % on the boundary
     if localBC == 2
-        iStart = iStart + (axis==0);
-        jStart = jStart + (axis==1);
+        iStart = iStart - (axis==0);
+        jStart = jStart - (axis==1);
     end
 end
 
@@ -522,8 +522,8 @@ if  tExplicit == 1
 elseif tExplicit == 0
     % implicit time stepping
     %-----------------------------------------------------------------------------------
-    for axis = 0:1
-        for side = 0:1
+    for side = 0:1
+        for axis = 0:1
             
             localBC = BC(axis+1,side+1);
             % on the boundary
@@ -594,18 +594,7 @@ elseif tExplicit == 0
                     end
                     
                 case 2
-                    % u(ia-i,j)  = u(Nx - i,j)
-                    
-%                     for pos = 1:2;
-%                         
-% %                         [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-%                                                 
-%                         matchSide = abs(side-1);
-%                         [bcxM,bcyM] =  getBCGLlocation(axis,matchSide,ia,ib,ja,jb,-pos);
-%                         
-%                         rhsU(bcxM,bcyM)  = getZero(bcxM,bcyM);
-%                         
-%                     end
+
                     
                 case 3
                     % u = u(t)
@@ -1181,7 +1170,7 @@ end
 % 
 % end
 
-function approxUxy = getUxy(U,iB,jB,hx,hy,axis)
+function approxUxy = getUxy(U,iB,jB,hx,hy)
 
 
 approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ...

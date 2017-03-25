@@ -15,7 +15,7 @@ Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 
 Nx = fS.Nx;
-%Ny = fS.Ny;
+Ny = fS.Ny;
 
 ia = fS.ia;
 ib = fS.ib;
@@ -45,8 +45,8 @@ lhsV = setLaplacian(lhsV,hx,hy,Nyg,mu,imTime,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction
-for axis = 0:1
-    for side = 0:1
+for side = 0:1
+    for axis = 0:1
         
         localBC = BC(axis+1,side+1);
         % on the boundary
