@@ -22,7 +22,7 @@ fS.plotting = 0;
 fS.makeMovie =0;
 
 fS.BC = [2 2;2 2];
-fS.twilightZone = 4; % 1 for trigSpolyT, 2 for poly2
+fS.twilightZone = 2; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else
@@ -90,7 +90,9 @@ for i=1:nargin
         fS.cons = sscanf(varargin{i},'-fS.cons=%i');
     end
     if(strncmp(line,'-BC=',4))
-        fS.BC = sscanf(varargin{i},'-BC=%i');
+      tempBC = sscanf(varargin{i},'-BC=%i');
+
+      fS.BC  = ones(2,2)*tempBC;
     end
     if(strncmp(line,'-CFL=',5))
         fS.CFL = sscanf(varargin{i},'-CFL=%e');
@@ -161,10 +163,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
                 f(3) = (x^2+1/2*x*y+y^2-1)*(1+2*t+2*t^2);
                 f(4) = (x^2+2*x*y+y^2)*(1+2*t+2*t^2);
                 
-%                 f(1) = (x^2+2*x*y+y^2)*(1);
-%                 f(2) = (-x^2-2*x*y-y^2)*(1);
-%                 f(3) = (x^2+1/2*x*y+y^2-1)*(1);
-%                 f(4) = (x^2+2*x*y+y^2)*(1);
+                f(1) = ( x + y)*(1) ;
+                f(2) = (-x - y)*(1) ;
+                f(3) = (x+y)*(1)*eps + 1;
+                f(4) = (x+y)*(1);
                 
             end
         end

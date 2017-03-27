@@ -116,9 +116,10 @@ for side = 0:1
             case 5
                 
         end
-        
+        %----------------------------------------------------------------
         % on the ghost lines
-        
+        %----------------------------------------------------------------
+
         switch localBC
             
             case 1
@@ -131,11 +132,11 @@ for side = 0:1
                 
                 if axis == 0
                     lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts);
+                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts,pos);
                     
                 elseif axis == 1
-                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
-                    lhsV  = setDx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts,pos);
+                    lhsV  = setDx(lhsV,hy,side,1,M,bcPts,lBcPts);
                     
                 end
                 
@@ -149,7 +150,7 @@ for side = 0:1
                     
                 elseif axis == 1
                     lhsU  = setExt(lhsU,side,1,M,bcPts);
-                    lhsV  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts);
+                    lhsV  = setDxx(lhsV,hy,side,1,M,bcPts,lBcPts,pos);
                     
                 end
                 
@@ -257,13 +258,25 @@ for sideX = 0:1
                     px3E(i) = px3 + (-1)^(sideX)*i;
                     py3E(i) = py3 + (-1)^(sideY)*i*(2);
                     
-                    px4E(i) = px4 + (-1)^(sideX)*i*(2);
-                    py4E(i) = py4 + (-1)^(sideY)*i*(2);
+                    px4E(i) =  px1E(i);
+                    py4E(i) =  py1E(i);
                 end
                 
-                coeff=[1,-15/4,3,-1/4];
+                coeff  =[1,-15/4 ,3 ,-1/4];
+                coeff4 =[1,-30   ,32,-3  ];
                 
+                                px1E=[];
+                px2E=[];
+                px3E=[];
+                px4E=[];
                 
+                py1E=[];
+                py2E=[];
+                py3E=[];
+                py4E=[];
+                
+                coeff=1;
+
             case 2
 
 	      stripeMatch = Nx*(axisBC==0) + Ny*(axisBC==1);
@@ -322,12 +335,12 @@ for sideX = 0:1
             lhsU    = lhsU + sparse(px1Index,p1Index,coeff(i),M,M);
             lhsU    = lhsU + sparse(px2Index,p2Index,coeff(i),M,M);
             lhsU    = lhsU + sparse(px3Index,p3Index,coeff(i),M,M);
-            lhsU    = lhsU + sparse(px4Index,p4Index,coeff(i),M,M);
+            lhsU    = lhsU + sparse(px4Index,p4Index,coeff4(i),M,M);
             
             lhsV    = lhsV + sparse(px1Index,p1Index,coeff(i),M,M);
             lhsV    = lhsV + sparse(px2Index,p2Index,coeff(i),M,M);
             lhsV    = lhsV + sparse(px3Index,p3Index,coeff(i),M,M);
-            lhsV    = lhsV + sparse(px4Index,p4Index,coeff(i),M,M);
+            lhsV    = lhsV + sparse(px4Index,p4Index,coeff4(i),M,M);
         end
         
     end
@@ -376,22 +389,26 @@ L   = L + sparse(pts,pts + shift3,-coeffX2,M,M);
 
 end
 
-function L = setDxx(L,h,side,Stride,M,pts,lPts)
+function L = setDxx(L,h,side,Stride,M,pts,lPts,pos)
 
 coeffX1 = ones(1,lPts) * (  16)/(12*h^2) ;
 coeffX2 = ones(1,lPts) * ( -30)/(12*h^2) ;
 coeffX3 = ones(1,lPts) * ( - 1)/(12*h^2) ;
 
-shift1  =  ((-1)^side)*(-1)*Stride;
-shift2  =  ((-1)^side)*  1 *Stride;
-shift3  =  ((-1)^side)*  2 *Stride;
-shift4  =  ((-1)^side)*  3 *Stride;
+awayFromBC = pos-2;
 
-L   = L + sparse(pts,pts         , coeffX1,M,M);
+shift1  =  ((-1)^side)*(awayFromBC  )*Stride;
+shift2  =  ((-1)^side)*(awayFromBC+1)*Stride;
+shift3  =  ((-1)^side)*(awayFromBC+2)*Stride;
+shift4  =  ((-1)^side)*(awayFromBC+3)*Stride;
+shift5  =  ((-1)^side)*(awayFromBC+4)*Stride;
+
+%L   = L + sparse(pts,pts         , coeffX1,M,M);
 L   = L + sparse(pts,pts + shift1, coeffX3,M,M);
-L   = L + sparse(pts,pts + shift2, coeffX2,M,M);
-L   = L + sparse(pts,pts + shift3, coeffX1,M,M);
-L   = L + sparse(pts,pts + shift4, coeffX3,M,M);
+L   = L + sparse(pts,pts + shift2, coeffX1,M,M);
+L   = L + sparse(pts,pts + shift3, coeffX2,M,M);
+L   = L + sparse(pts,pts + shift4, coeffX1,M,M);
+L   = L + sparse(pts,pts + shift5, coeffX3,M,M);
 
 
 end

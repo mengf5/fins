@@ -101,8 +101,8 @@ v   =fS.v;
 % dudt=fS.dudt;
 % tem =fS.tem;
 % dvdx=fS.dvdx;
- 
- 
+
+
 fxE  =fS.fxE;
 fyE  =fS.fyE;
 fxI  =fS.fxI;
@@ -329,7 +329,7 @@ if tExplicit==1
                 +cA(3)  *UP2(i,j) ...
                 +cA(4)  *UP3(i,j)); %
             
-
+            
             
             rhsV(i,j) = timeint(1)*rhsvC...
                 + timeint(2)*rhsvP1...
@@ -502,22 +502,22 @@ if  tExplicit == 1
     msg = 'boundary conditions for explicit time stepping method is under construction';
     error(msg)
     
-%     for axis = 0:1
-%         for side = 0:1
-%             
-%             localBC = BC(axis+1,side+1);
-%             % on the boundary
-%             pos = 0;
-%             
-%             [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-%             
-%             switch localBC
-%                 case 1
-%                     
-%             end
-%             
-%         end
-%     end
+    %     for axis = 0:1
+    %         for side = 0:1
+    %
+    %             localBC = BC(axis+1,side+1);
+    %             % on the boundary
+    %             pos = 0;
+    %
+    %             [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+    %
+    %             switch localBC
+    %                 case 1
+    %
+    %             end
+    %
+    %         end
+    %     end
     
 elseif tExplicit == 0
     % implicit time stepping
@@ -551,9 +551,9 @@ elseif tExplicit == 0
                 case 5
                     
             end
-            
+            %--------------------------------------------------------------
             % on the ghost lines
-            
+            %--------------------------------------------------------------
             switch localBC
                 
                 case 1
@@ -565,36 +565,38 @@ elseif tExplicit == 0
                     
                     if axis == 0
                         
-                        rhsU(bcx,bcy) = -getCompUx(V,fS,bcx,bcy,axis,side,pos);
-                        rhsV(bcx,bcy) =  getCompUxx(U,fS,bcx,bcy,axis,side,pos,count);
+                        rhsU(bcx,bcy) =  getCompUx(V,fS,bcx,bcy,axis,side,pos);
+                        axisV=1;
+                        rhsV(bcx,bcy) =  getCompUxx(V,fS,bcx,bcy,axisV,side,pos,count);
                         
                     elseif axis == 1
                         
-                        rhsV(bcx,bcy) = -getCompUx(U,fS,bcx,bcy,axis,side,pos);
-                        rhsU(bcx,bcy) =  getCompUxx(U,fS,bcx,bcy,axis,side,pos,count);
+                        rhsV(bcx,bcy) =  getCompUx(U,fS,bcx,bcy,axis,side,pos);
+                        axisU = 0;
+                        rhsU(bcx,bcy) =  getCompUxx(U,fS,bcx,bcy,axisU,side,pos,count);
                         
                     end
                     
                     pos = 2;
                     
                     [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-
-		    iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
-		    jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
-
-		    
+                    
+                    iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
+                    jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+                    
+                    
                     if axis == 0
-                      rhsU(bcx,bcy)  = -getUxy(V,iB,jB,hx,hy,axis);%getCompUxy(V,fS,bcx,bcy,axis,side,pos);
-                      rhsV(bcx,bcy)  = getZero(bcx,bcy);
+                        rhsU(bcx,bcy)  = getCompUxxx(fS,iB,jB); 
+                        rhsV(bcx,bcy)  = getZero(bcx,bcy);
                         
                     elseif axis == 1
                         rhsU(bcx,bcy)  = getZero(bcx,bcy);
-                        rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy,axis);
+                        rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy);
                         
                     end
                     
                 case 2
-
+                    
                     
                 case 3
                     % u = u(t)
@@ -616,9 +618,9 @@ elseif tExplicit == 0
         end
     end
     
-%--------------------------------------------------------------------------
-% now fix em corner points
-%--------------------------------------------------------------------------
+    %--------------------------------------------------------------------------
+    % now fix em corner points
+    %--------------------------------------------------------------------------
     for sideX = 0:1
         for sideY = 0:1
             
@@ -636,41 +638,68 @@ elseif tExplicit == 0
             
             px4 = px - (-1)^sideX * 2;
             py4 = py - (-1)^sideY * 2;
-
-	    chooseBC(1) = BC(1,1+sideX);
-	    chooseBC(2) = BC(2,1+sideY);
-	    
-	    if max( chooseBC ) < 4
-	      
-	      localBC =  max( chooseBC );
-	      
-	    else 
-	      
-	      fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
-	      fprintf('proceed with extreme caution \n');
-	      pause;
-	      
-	    end
-	    
+            
+            chooseBC(1) = BC(1,1+sideX);
+            chooseBC(2) = BC(2,1+sideY);
+            
+            if max( chooseBC ) < 4
+                
+                localBC =  max( chooseBC );
+                
+            else
+                
+                fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+                fprintf('proceed with extreme caution \n');
+                pause;
+                
+            end
+            
             switch localBC
-                   
+                
                 case 1
                     
-                    for i = 1:3
-                        px1E(i) = px1 + (-1)^(sideX)*i;
-                        py1E(i) = py1 + (-1)^(sideY)*i;
-                        
-                        px2E(i) = px2 + (-1)^(sideX)*i*(2);
-                        py2E(i) = py2 + (-1)^(sideY)*i;
-                        
-                        px3E(i) = px3 + (-1)^(sideX)*i;
-                        py3E(i) = py3 + (-1)^(sideY)*i*(2);
-                        
-                        px4E(i) = px4 + (-1)^(sideX)*i*(2);
-                        py4E(i) = py4 + (-1)^(sideY)*i*(2);
-                    end
+                    rx1 = - (-1)^(sideX);
+                    ry1 = - (-1)^(sideY);
                     
-                    coeff=[1,-15/4,3,-1/4];
+                    rx2 = - (-1)^(sideX)*(2);
+                    ry2 = - (-1)^(sideY);
+                    
+                    rx3 = - (-1)^(sideX);
+                    ry3 = - (-1)^(sideY)*(2);
+                    
+                    coeff  =[3/2 , 3];
+                    coeff4 =[24  , 24];
+                    
+                    [D1u,D2u,D1v,D2v]  = getDs(fS,px,py,rx1,ry1,hx,hy);
+                    
+                    rhsU(px1,py1) = coeff(1)*D1u +  coeff(2)*D2u;
+                    rhsV(px1,py1) = coeff(1)*D1v +  coeff(2)*D2v;
+                    
+                    rhsU(px4,py4) = coeff4(1)*D1u +  coeff4(2)*D2u;
+                    rhsV(px4,py4) = coeff4(1)*D1v +  coeff4(2)*D2v;
+                    
+                    [D1u,D2u,D1v,D2v]  = getDs(fS,px,py,rx2,ry2,hx,hy);
+                    
+                    rhsU(px2,py2) = coeff(1)*D1u +  coeff(2)*D2u;
+                    rhsV(px2,py2) = coeff(1)*D1v +  coeff(2)*D2v;
+                    
+                    [D1u,D2u,D1v,D2v]  = getDs(fS,px,py,rx2,ry2,hx,hy);
+                    
+                    rhsU(px3,py3) = coeff(1)*D1u +  coeff(2)*D2u;
+                    rhsV(px3,py3) = coeff(1)*D1v +  coeff(2)*D2v;
+                    
+                                        rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
+                    rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
+                    
+                    rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
+                    rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
+                    
+                    rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
+                    rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
+                    
+                    rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
+                    rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
+                    
                     
                 case 3
                     
@@ -689,19 +718,21 @@ elseif tExplicit == 0
                     
             end
             
-%             px1 = [px1,px1E];
-%             px2 = [px2,px2E];
-%             px3 = [px3,px3E];
-%             px4 = [px4,px4E];
-%             
-%             py1 = [py1,py1E];
-%             py2 = [py2,py2E];
-%             py3 = [py3,py3E];
-%             py4 = [py4,py4E];
-%             
-%             for i = 1:length(px1)
-%                 
-%             end
+            
+            
+            %             px1 = [px1,px1E];
+            %             px2 = [px2,px2E];
+            %             px3 = [px3,px3E];
+            %             px4 = [px4,px4E];
+            %
+            %             py1 = [py1,py1E];
+            %             py2 = [py2,py2E];
+            %             py3 = [py3,py3E];
+            %             py4 = [py4,py4E];
+            %
+            %             for i = 1:length(px1)
+            %
+            %             end
             
         end
     end
@@ -723,9 +754,9 @@ elseif tExplicit == 0
                 
                 [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
                 iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
-		jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
-
-                rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy,axis);
+                jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+                
+                rhsV(bcx,bcy)  = -getUxy(U,iB,jB,hx,hy);
                 
         end
     end
@@ -926,34 +957,43 @@ end
 end
 
 
-function Uxxx = getCompUxxx(fS,i,j,P,hx,hy)
+function Uxxx = getCompUxxx(fS,iB,jB)
+
+t2 = fS.t2;
+x = fS.x;
+y = fS.y;
+
+dvdx2y = fS.dvdx2y;
+Uxxx  = -dvdx2y(x(iB,jB),y(iB,jB),t2);
+return
 
 % dudx3 = -dvdx2y
 %       =  dvdy3 - 1/mu*(dvdty + dudy*dvdx + u*dvdxy
-%                       +dvdy*dvdy + v*dvdy2 + dpdxy);
+%                       +dvdy*dvdy + v*dvdy2 + dpdy2);
 
-mu    = fS.mu;
-dudy  = fS.dudy;
-dvdy3 = fS.dvdy3;
-dvdy2 = fS.dvdy2;
-dvdx  = fS.dvdx;
-dvdy  = fS.dvdy;
-dvdxy = fS.dvdxy;
-dvdty = fS.dvdty;
-dfydy = fS.dfydy;
-dvdx2y = fS.dvdx2y;
-
-
-dpdy2 = (P(i,j+1) - 2*P(i,j) + P(i,j-1))/(hy^2);
-
-%dudx3 = -dvdx2y(x(i,j),y(i,j),t2);
-dudx3 = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
-    + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
-    + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
-    + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
-    + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
-    + dpdy2 - dfydy(x(i,j),y(i,j),t2));
+% mu    = fS.mu;
+% dudy  = fS.dudy;
+% dvdy3 = fS.dvdy3;
+% dvdy2 = fS.dvdy2;
+% dvdx  = fS.dvdx;
+% dvdy  = fS.dvdy;
+% dvdxy = fS.dvdxy;
+% dvdty = fS.dvdty;
+% dfydy = fS.dfydy;
+% dvdx2y = fS.dvdx2y;
+% 
+% 
+% dpdy2 = (P(i,j+1) - 2*P(i,j) + P(i,j-1))/(hy^2);
+% 
+% %dudx3 = -dvdx2y(x(i,j),y(i,j),t2);
+% Uxxx = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
+%     + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
+%     + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
+%     + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
+%     + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
+%     + dpdy2 - dfydy(x(i,j),y(i,j),t2));
 %
+
 end
 
 
@@ -978,7 +1018,7 @@ jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
 hx = fS.hx;
 hy = fS.hy;
 h  = (axis==0)*hx  + (axis==1)*hy;
-    
+
 dpdxApprox = getDpdx(fS,iB,jB,count,axis,h);
 
 % get the forcing term
@@ -1003,18 +1043,20 @@ if tw > 0
         dudt  = fS.dudt ;
         dudx  = fS.dudx ;
         dudy  = fS.dudy ;
+        dudx2 = fS.dudx2 ;
     elseif axis == 1
         dudt  = fS.dvdt;
         dudx  = fS.dvdx;
         dudy  = fS.dvdy;
+        dudx2 = fS.dvdy2 ;
     end
     
     Uxx = (1/mu)*(dudt(x(iB,jB),y(iB,jB),t2) ...
         +  u(x(iB,jB),y(iB,jB),t2).*dudx(x(iB,jB),y(iB,jB),t2) ...
         +  v(x(iB,jB),y(iB,jB),t2).*dudy(x(iB,jB),y(iB,jB),t2) ...
         + dpdxApprox ...
-        - fy(x(iB,jB),y(iB,jB),t2)) ...
-        - dvdy2(x(iB,jB),y(iB,jB),t2);
+        - fx(x(iB,jB),y(iB,jB),t2)) ...
+        - dudx2(x(iB,jB),y(iB,jB),t2);
     
 elseif tw == 0
     
@@ -1050,11 +1092,11 @@ if count == 1
     PEXT =  coeff(1)*PC ...
         + coeff(2)*PP1 ...
         + coeff(3)*PP2;
-        
+    
 elseif count > 1
-
+    
     PEXT = fS.PN;
-
+    
 end
 
 xShift =   (axis==0);
@@ -1062,7 +1104,7 @@ yShift =   (axis==1);
 
 
 dpdx  = (PEXT(i+xShift,j+yShift) - PEXT(i-xShift,j-yShift))/(2*h);
-    
+
 
 
 end
@@ -1076,10 +1118,10 @@ xShift =   (axis==0);
 yShift =   (axis==1);
 
 approxUxx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
-             + 16* U(iB + xShift, jB + yShift) +   ...
-             (-1)* U(iB - xShift*2, jB - yShift*2) ...
-             + 16* U(iB - xShift, jB - yShift) +   ...
-            (-30)* U(iB           , jB          ) )/h^2;
+    + 16* U(iB + xShift, jB + yShift) +   ...
+    (-1)* U(iB - xShift*2, jB - yShift*2) ...
+    + 16* U(iB - xShift, jB - yShift) +   ...
+    (-30)* U(iB           , jB          ) )/h^2;
 
 end
 
@@ -1088,6 +1130,10 @@ end
 function approxUx = getCompUx(U,fS,bcx,bcy,axis,side,pos)
 
 tw = fS.tw;
+t2 = fS.t2;
+x  = fS.x;
+y  = fS.y;
+
 % keep the exact ux here for debug
 % dudx = (axis==1)*fS.dudx + (axis==0)*fS.dvdy;
 % U(bcx,bcy) = dudx(x(iB,jB),y(iB,jB),t2);
@@ -1129,24 +1175,24 @@ xShift =   (axis==0);
 yShift =   (axis==1);
 
 approxUx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
-            + 16* U(iB + xShift, jB + yShift) + ...
-            (-1)* U(iB - xShift*2, jB - yShift*2) ...
-            + 16* U(iB - xShift, jB - yShift)  ...
-            )/(12*h);
+    + 16* U(iB + xShift, jB + yShift) + ...
+    (-1)* U(iB - xShift*2, jB - yShift*2) ...
+    + 16* U(iB - xShift, jB - yShift)  ...
+    )/(12*h);
 end
 
 % function approxUxy = getCompUxy(U,fS,bcx,bcy,axis,side,pos)
-% 
+%
 % tw = fS.tw;
 % % keep the exact ux here for debug
 % % dudx = (axis==1)*fS.dudx + (axis==0)*fS.dvdy;
 % % U(bcx,bcy) = dudx(x(iB,jB),y(iB,jB),t2);
-% 
+%
 % % get the index for the corresponding boundary points
-% 
+%
 % iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
 % jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
-% 
+%
 % % if twilightZone forcing is given, use exact dudx,
 % % otherwise, use approximated dudx
 % if tw > 0
@@ -1155,28 +1201,28 @@ end
 %     elseif axis == 1
 %         dudx = fS.dudx;
 %     end
-%     
+%
 %     approxUx = -dudx(x(iB,jB),y(iB,jB),t2);
-%     
+%
 % elseif tw == 0
 %     hx = fS.hx;
 %     hy = fS.hy;
 %     h    = (axis==0)*hy  + (axis==1)*hx;
 %     axis = abs(axis-1);
-%     
+%
 %     approxUx = -getUx(U,iB,jB,axis,h);
-%     
+%
 % end
-% 
+%
 % end
 
 function approxUxy = getUxy(U,iB,jB,hx,hy)
 
 
 approxUxy = -(-U(iB+2,jB+2) + 8*U(iB+1,jB+2) - 8*U(iB-1,jB+2) + U(iB-2,jB+2)) ...
-            +8*(-U(iB+2,jB+1) + 8*U(iB+1,jB+1) - 8*U(iB-1,jB+1) + U(iB-2,jB+1)) ...
-            -8*(-U(iB+2,jB-1) + 8*U(iB+1,jB-1) - 8*U(iB-1,jB-1) + U(iB-2,jB-1)) ...
-            + (-U(iB+2,jB-2) + 8*U(iB+1,jB-2) - 8*U(iB-1,jB-2) + U(iB-2,jB-2));
+    +8*(-U(iB+2,jB+1) + 8*U(iB+1,jB+1) - 8*U(iB-1,jB+1) + U(iB-2,jB+1)) ...
+    -8*(-U(iB+2,jB-1) + 8*U(iB+1,jB-1) - 8*U(iB-1,jB-1) + U(iB-2,jB-1)) ...
+    + (-U(iB+2,jB-2) + 8*U(iB+1,jB-2) - 8*U(iB-1,jB-2) + U(iB-2,jB-2));
 
 approxUxy = approxUxy/(12*hx*12*hy);
 
@@ -1218,8 +1264,44 @@ bcy = bcy + (axis==1)*( - (-1)^side * pos );
 
 end
 
-function getDs
+function [D1u,D2u,D1v,D2v] = getDs(fS,iB,jB,rx,ry,hx,hy)
 
+tw = fS.tw;
+x  = fS.x;
+y  = fS.y;
+t2  = fS.t2;
 
+if tw == 1
+    
+    dudx  = fS.dudx;
+    dudy  = fS.dudy;
+    
+    dvdx  = fS.dvdx;
+    dvdy  = fS.dvdy;
+    
+    dudx2 = fS.dudx2;
+    dvdx2 = fS.dvdx2;
+    
+    dudy2 = fS.dudy2;
+    dvdy2 = fS.dvdy2;
+    
+    
+    D1u = rx*hx*dudx(x(iB,jB),y(iB,jB),t2) + ry*hy*dudy(x(iB,jB),y(iB,jB),t2);
+    
+    D2u = (rx*hx)^2/2*dudx2(x(iB,jB),y(iB,jB),t2) + (ry*hy)^2/2*dudy2(x(iB,jB),y(iB,jB),t2) - rx*hx*ry*hy*dvdy2(x(iB,jB),y(iB,jB),t2);
+    
+    D1v = rx*hx*dvdx(x(iB,jB),y(iB,jB),t2) + ry*hy*dvdy(x(iB,jB),y(iB,jB),t2);
+    
+    D2v = (rx*hx)^2/2*dvdx2(x(iB,jB),y(iB,jB),t2) + (ry*hy)^2/2*dvdy2(x(iB,jB),y(iB,jB),t2) - rx*hx*ry*hy*dudx2(x(iB,jB),y(iB,jB),t2);
+    
+    
+elseif tw==0
+    
+    D1u = 0;
+    D2u = 0;
+    D1v = 0;
+    D2v = 0;
+    
+end
 
 end
