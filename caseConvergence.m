@@ -5,8 +5,10 @@ close all
 nameappenSetup = '4th';
 %8378 for test
 
+cg3 = 0;
+
 fS     =ins;
-fS.tEnd=4.1;
+fS.tEnd=2.1;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
@@ -16,13 +18,13 @@ fS.numberOfAdapt=5000;
 fS.extOrder=6;
 fS.uvSwitch=0;
 fS.CFLfix=.9;
-fS.directSolve = 0;
+fS.directSolve = 1;
 
 fS.plotting = 0;
 fS.makeMovie =0;
 
-fS.BC = [2 2;2 2];
-fS.twilightZone = 2; % 1 for trigSpolyT, 2 for poly2
+fS.BC = [1 1;1 1];
+fS.twilightZone = 4; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 7;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else
@@ -36,8 +38,8 @@ fS.uw = 0;
 gridx = [76 151];
 gridy = [76 151];
 
-gridx = [50];
-gridy = [50];
+gridx = [51 101];
+gridy = [51 101];
 
 %with cfl =.9, tw == 4, tEnd=1.1, gridx=gridy = 401; This takes roughly 9 hours with direct solve
 
@@ -163,10 +165,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
                 f(3) = (x^2+1/2*x*y+y^2-1)*(1+2*t+2*t^2);
                 f(4) = (x^2+2*x*y+y^2)*(1+2*t+2*t^2);
                 
-                f(1) = ( x + y)*(1) ;
-                f(2) = (-x - y)*(1) ;
-                f(3) = (x+y)*(1)*eps + 1;
-                f(4) = (x+y)*(1);
+%                 f(1) = ( x + y)*(1) ;
+%                 f(2) = (-x - y)*(1) ;
+%                 f(3) = (x+y)*(1)*eps + 1;
+%                 f(4) = (x+y)*(1);
                 
             end
         end
@@ -241,7 +243,10 @@ for i = 1:length(gridx)
 
             
     fS.path = ['/Users/fanlongmeng/Documents/Research/INS4/figures/figure' nameappen];
-    
+    if cg3==1
+           fS.path = ['/home/mengf5/fins/figures/figure' nameappen]; 
+    end
+        
     
     err(i,:) = main(f,fS);
     
@@ -260,7 +265,13 @@ end
 %end
 time = char(datestr(now,'mmmm dd, yyyy HH:MM:SS AM'));
 %save tableContent.mat err rate
+
 pathOutput = ['/Users/fanlongmeng/Documents/Research/INS4/setups/setup' nameappen '.tex'];
+if cg3==1
+
+pathOutput = ['/home/mengf5/fins/setups/setup' nameappen '.tex'];
+end
+
 FID = fopen(pathOutput, 'w');
 fprintf(FID, 'date saved at %s \\\\ \n',time);
 fprintf(FID, 'x-domain is $\\in [%3.2f, %3.2f]$ \\\\ \n',fS.domain(1,:));
@@ -330,6 +341,13 @@ fclose(FID);
 
 
 pathTable = ['/Users/fanlongmeng/Documents/Research/INS4/tables/table' nameappen '.tex'];
+
+if cg3==1
+
+pathTable = ['/home/mengf5/fins/tables/table' nameappen '.tex'];
+
+end
+
 FID = fopen(pathTable, 'w');
 fprintf(FID, '\\begin{centering}  \n');
 %fprintf(FID, '\\begin{tabular}{c|l|l|l|c} \n');

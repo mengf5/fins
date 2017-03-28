@@ -265,17 +265,19 @@ for sideX = 0:1
                 coeff  =[1,-15/4 ,3 ,-1/4];
                 coeff4 =[1,-30   ,32,-3  ];
                 
-                                px1E=[];
-                px2E=[];
-                px3E=[];
-                px4E=[];
-                
-                py1E=[];
-                py2E=[];
-                py3E=[];
-                py4E=[];
-                
-                coeff=1;
+%                 px1E=[];
+%                 px2E=[];
+%                 px3E=[];
+%                 px4E=[];
+%                 
+%                 py1E=[];
+%                 py2E=[];
+%                 py3E=[];
+%                 py4E=[];
+%                 
+%                 coeff=1;
+%                coeff4=1;
+
 
             case 2
 
@@ -295,7 +297,8 @@ for sideX = 0:1
               px4E = px4 + (-1)^side*(stripeMatch - 1);
               py4E = py4 ;
               
-              coeff=[1,-1];
+              coeff =[1,-1];
+              coeff4=[1,-1];
                 
                 
             case 3
@@ -311,6 +314,7 @@ for sideX = 0:1
                 py4E=[];
                 
                 coeff=1;
+                coeff4=1;
                 
                 
                 

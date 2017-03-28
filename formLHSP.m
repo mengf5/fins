@@ -16,7 +16,7 @@ hx  = fS.hx;
 hy  = fS.hy;
 
 BC  = fS.BC;
-
+%BC=[3,3;3,3];
 %extOrder   = fS.extOrder;
 
 % total number of grid points(including ghosts)
@@ -216,7 +216,18 @@ for sideX = 0:1
                 end
                 
                 coeff=[1,-15/4,3,-1/4];
+		
+                px1E=[];
+                px2E=[];
+                px3E=[];
+                px4E=[];
                 
+                py1E=[];
+                py2E=[];
+                py3E=[];
+                py4E=[];
+                
+                coeff=1; 
                 
             case 2
                 

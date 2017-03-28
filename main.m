@@ -116,8 +116,9 @@ Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 hx  = fS.hx;
 hy  = fS.hy;
-
+tic
 Lp =  formLHSP(fS);
+toc
 
 fS.Lp = Lp;
 
@@ -281,16 +282,10 @@ while (t2 - tend) < eps-dt/4
     
     [count,U2,V2,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS);
     
-%     [count,U2C,V2C,rhsuCC,rhsvCC,maxgrad] = VelocitySolverNew(t1,t2,0,fS);
-%     
-%     max(max(abs(rhsuCC-rhsuC)))
-%     max(max(abs(rhsvCC-rhsvC)))
-    
-    U2E   = fS.u(x,y,t2);
-    V2E   = fS.v(x,y,t2);
-    
-    max(max(abs(U2E-U2)))
-    max(max(abs(V2E-V2)))
+  Ut = fS.u(x,y,t2);
+    Vt = fS.v(x,y,t2);
+    Pt = fS.p(x,y,t2);
+    Tt = fS.tem(x,y,t2);
 
     Tem2 = fS.tem(x,y,t2);
     
@@ -313,8 +308,10 @@ while (t2 - tend) < eps-dt/4
     end
     %end
     
-    %P2 = PressureSolver(t2,fS);
-    P2 = fS.p(x,y,t2);
+    P2 = PressureSolverNew(t2,count,fS);
+    %Pt = fS.p(x,y,t2);
+    %max(max(abs(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))...
+    %    -abs(mean(mean(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))))))
     
     fS.PN   = P2;
     
@@ -328,8 +325,8 @@ while (t2 - tend) < eps-dt/4
         fS.VN   = V2;
         fS.TemN = Tem2;
         
-        %P2 = PressureSolver(t2,fS);
-        P2 = fS.p(x,y,t2);
+        P2 = PressureSolverNew(t2,count,fS);
+        %P2 = fS.p(x,y,t2);
         
         fS.PN   = P2;
     end
@@ -722,8 +719,8 @@ end
 
 %if plotting == 1
     close all
-    %p = figure('Visible','off');
-    pl = figure(1);
+    pl = figure('Visible','off');
+    %pl = figure(1);
     %t = linspace(dt,tend,tn-1);
     label = 'Error vs t';
     
@@ -766,44 +763,11 @@ end
         title('error P','FontSize',16);        
     end
 
-pl=figure(2);
+pl=figure('visible','off');
 debugPlot
 print(pl, '-dpng',[fS.path 'Error' '.png']); 
 
-% pl=figure(3);
-% plot(t(:),energyerr(2,3:end)+energyerr(1,3:end),'g','LineWidth',2)
-% hold on
-% plot(t(:),energyerr(1,3:end),'b','LineWidth',2)
-% plot(t(:),energyerr(2,3:end),'r','LineWidth',2)
-% set(gca, 'FontSize', 20)
-% xlabel('t');
-% ylabel('Energy - Energy_{exact}');
-% title(label,'FontSize',20);
-% legend('U^2+V^2','U^2','V^2')
-% print(pl, '-depsc',[fS.path 'energy' '.eps']);
-% 
-% pl=figure(4);
-% plot(t(:),momentumerr(1,3:end),'b','LineWidth',2)
-% hold on
-% plot(t(:),momentumerr(2,3:end),'r','LineWidth',2)
-% set(gca, 'FontSize', 20)
-% xlabel('t');
-% ylabel('momentum - momentum_{exact}');
-% title(label,'FontSize',20);
-% legend('U','V')
-% print(pl, '-depsc',[fS.path 'momentum' '.eps']);
-% 
-% 
-% pl=figure(5);
-% plot(t(:),peakuv(1,3:end),'b','LineWidth',2)
-% hold on
-% plot(t(:),peakuv(2,3:end),'r','LineWidth',2)
-% set(gca, 'FontSize', 20)
-% xlabel('t');
-% ylabel('peak - peak_{exact}');
-% title(label,'FontSize',20);
-% legend('U','V')
-% print(pl, '-depsc',[fS.path 'peak' '.eps']);
+
 
 if fS.makeMovie == 1
 close(movieU);

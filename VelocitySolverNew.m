@@ -586,7 +586,7 @@ elseif tExplicit == 0
                     
                     
                     if axis == 0
-                        rhsU(bcx,bcy)  = getCompUxxx(fS,iB,jB); 
+                        rhsU(bcx,bcy)  = getCompUxxx(fS,count,iB,jB); 
                         rhsV(bcx,bcy)  = getZero(bcx,bcy);
                         
                     elseif axis == 1
@@ -658,14 +658,14 @@ elseif tExplicit == 0
                 
                 case 1
                     
-                    rx1 = - (-1)^(sideX);
-                    ry1 = - (-1)^(sideY);
+                    rx1 =  (-1)^(sideX);
+                    ry1 =  (-1)^(sideY);
                     
-                    rx2 = - (-1)^(sideX)*(2);
-                    ry2 = - (-1)^(sideY);
+                    rx2 =  (-1)^(sideX)*(2);
+                    ry2 =  (-1)^(sideY);
                     
-                    rx3 = - (-1)^(sideX);
-                    ry3 = - (-1)^(sideY)*(2);
+                    rx3 =  (-1)^(sideX);
+                    ry3 =  (-1)^(sideY)*(2);
                     
                     coeff  =[3/2 , 3];
                     coeff4 =[24  , 24];
@@ -683,22 +683,22 @@ elseif tExplicit == 0
                     rhsU(px2,py2) = coeff(1)*D1u +  coeff(2)*D2u;
                     rhsV(px2,py2) = coeff(1)*D1v +  coeff(2)*D2v;
                     
-                    [D1u,D2u,D1v,D2v]  = getDs(fS,px,py,rx2,ry2,hx,hy);
+                    [D1u,D2u,D1v,D2v]  = getDs(fS,px,py,rx3,ry3,hx,hy);
                     
                     rhsU(px3,py3) = coeff(1)*D1u +  coeff(2)*D2u;
                     rhsV(px3,py3) = coeff(1)*D1v +  coeff(2)*D2v;
                     
-                                        rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
-                    rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
-                    
-                    rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
-                    rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
-                    
-                    rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
-                    rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
-                    
-                    rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
-                    rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
+%                     rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
+%                     rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
+%                     
+%                     rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
+%                     rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
+%                     
+%                     rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
+%                     rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
+%                     
+%                     rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
+%                     rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
                     
                     
                 case 3
@@ -957,42 +957,45 @@ end
 end
 
 
-function Uxxx = getCompUxxx(fS,iB,jB)
+function Uxxx = getCompUxxx(fS,count,i,j)
 
 t2 = fS.t2;
 x = fS.x;
 y = fS.y;
 
 dvdx2y = fS.dvdx2y;
-Uxxx  = -dvdx2y(x(iB,jB),y(iB,jB),t2);
-return
+Uxxx  = -dvdx2y(x(i,j),y(i,j),t2);
+%return
 
 % dudx3 = -dvdx2y
 %       =  dvdy3 - 1/mu*(dvdty + dudy*dvdx + u*dvdxy
 %                       +dvdy*dvdy + v*dvdy2 + dpdy2);
 
-% mu    = fS.mu;
-% dudy  = fS.dudy;
-% dvdy3 = fS.dvdy3;
-% dvdy2 = fS.dvdy2;
-% dvdx  = fS.dvdx;
-% dvdy  = fS.dvdy;
-% dvdxy = fS.dvdxy;
-% dvdty = fS.dvdty;
-% dfydy = fS.dfydy;
-% dvdx2y = fS.dvdx2y;
-% 
-% 
-% dpdy2 = (P(i,j+1) - 2*P(i,j) + P(i,j-1))/(hy^2);
-% 
-% %dudx3 = -dvdx2y(x(i,j),y(i,j),t2);
-% Uxxx = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
-%     + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
-%     + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
-%     + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
-%     + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
-%     + dpdy2 - dfydy(x(i,j),y(i,j),t2));
-%
+mu    = fS.mu;
+u = fS.u;
+v = fS.v;
+dudy  = fS.dudy;
+dvdy3 = fS.dvdy3;
+dvdy2 = fS.dvdy2;
+dvdx  = fS.dvdx;
+dvdy  = fS.dvdy;
+dvdxy = fS.dvdxy;
+dvdty = fS.dvdty;
+dfydy = fS.dfydy;
+order=2;
+hy = fS.hy;
+
+dpdy2Approx = getDpdx(fS,i,j,count,1,hy,order);
+%dpdy2 = (P(i,j+1) - 2*P(i,j) + P(i,j-1))/(hy^2);
+
+%dudx3 = -dvdx2y(x(i,j),y(i,j),t2);
+Uxxx = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
+    + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
+    + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
+    + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
+    + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
+    + dpdy2Approx - dfydy(x(i,j),y(i,j),t2));
+
 
 end
 
@@ -1006,27 +1009,37 @@ t2 = fS.t2;
 x = fS.x;
 y = fS.y;
 
+
 % keep the exact uxx here for debug
 % dudx2 = (axis==0)*fS.dudx2 + (axis=1)*fS.dvdy2;
 % U(bcx,bcy) = dvdx2(x(iB,jB),y(iB,jB),t2);
 
 % get the index for the corresponding boundary points
 
-iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
-jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+iB = (axis==1)*(bcx + (-1)^side*pos) + (axis==0)*bcx;
+jB = (axis==0)*(bcy + (-1)^side*pos) + (axis==1)*bcy;
 
 hx = fS.hx;
 hy = fS.hy;
 h  = (axis==0)*hx  + (axis==1)*hy;
 
-dpdxApprox = getDpdx(fS,iB,jB,count,axis,h);
+order = 1;
+dpdxApprox = getDpdx(fS,iB,jB,count,axis,h,order);
+
+
 
 % get the forcing term
 if axis == 0
-    fx = fS.fx ;
+    fx   =  fS.fx ;
+    dpdx =  fS.dpdx ;
+
 elseif axis == 1
     fx = fS.fy;
+    dpdx =  fS.dpdy ;
+
 end
+
+%dpdxApprox = dpdx(x(iB,jB),y(iB,jB),t2);
 
 % dudt + u dudx + v dudy = -dpdx + mu (dudx2 + dudy2)
 % if no twilightZone forcing, uxx = 1/mu * ( dp/dx - fx) - uyy
@@ -1064,10 +1077,14 @@ elseif tw == 0
     
 end
 
+
+
+
+
 end
 
 
-function dpdx = getDpdx(fS,i,j,count,axis,h)
+function dpdx = getDpdx(fS,i,j,count,axis,h,order)
 
 if count == 1
     % at the predictor step
@@ -1102,10 +1119,11 @@ end
 xShift =   (axis==0);
 yShift =   (axis==1);
 
-
-dpdx  = (PEXT(i+xShift,j+yShift) - PEXT(i-xShift,j-yShift))/(2*h);
-
-
+if order == 1
+    dpdx  = (PEXT(i+xShift,j+yShift) - PEXT(i-xShift,j-yShift))/(2*h);
+elseif order == 2
+    dpdx  = (PEXT(i+xShift,j+yShift) - 2*PEXT(i,j) + PEXT(i-xShift,j-yShift))/(h^2);
+end
 
 end
 

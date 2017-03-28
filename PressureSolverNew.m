@@ -1,4 +1,4 @@
-function P = PressureSolverNew(t2,fS)
+function P = PressureSolverNew(t2,count,fS)
 %--------------------------------------------------------------------------
 % sub functions contained in this code:
 %
@@ -11,6 +11,8 @@ beta  = fS.beta;
 alpha = fS.alpha;
 
 BC = fS.BC;
+%BC =[3,3;3,3];
+
 g    = fS.g;
 mubx = fS.mubx;
 muby = fS.muby;
@@ -117,7 +119,7 @@ for axis = 0:1
                     
         [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
                     
-        RHSp(bcx,bcy) = -getCompPx(V,fS,bcx,bcy,axis,side,pos);
+        RHSp(bcx,bcy) = getCompPx(UN,VN,fS,bcx,bcy,axis,side,pos,count);
           
         pos = 2;
                     
@@ -182,20 +184,30 @@ for sideX = 0:1
     end
 
     switch localBC
-%      case 1
-% extrapolation 
-%      case 2
-%periodic
-      case 3
-
-	RHSp(px1,py1) = p(x(px1,py1),y(px1,py1),t2);
         
-        RHSp(px2,py2) = p(x(px2,py2),y(px2,py2),t2);
-        
-        RHSp(px3,py3) = p(x(px3,py3),y(px3,py3),t2);
-        
-        RHSp(px4,py4) = p(x(px4,py4),y(px4,py4),t2);
-	
+        case 1
+            
+            RHSp(px1,py1) = p(x(px1,py1),y(px1,py1),t2);
+            
+            RHSp(px2,py2) = p(x(px2,py2),y(px2,py2),t2);
+            
+            RHSp(px3,py3) = p(x(px3,py3),y(px3,py3),t2);
+            
+            RHSp(px4,py4) = p(x(px4,py4),y(px4,py4),t2);
+            
+            % extrapolation
+            %      case 2
+            %periodic
+        case 3
+            
+            RHSp(px1,py1) = p(x(px1,py1),y(px1,py1),t2);
+            
+            RHSp(px2,py2) = p(x(px2,py2),y(px2,py2),t2);
+            
+            RHSp(px3,py3) = p(x(px3,py3),y(px3,py3),t2);
+            
+            RHSp(px4,py4) = p(x(px4,py4),y(px4,py4),t2);
+            
 	
     end	   
     
@@ -249,12 +261,15 @@ end
 
 
 
-function approxPx = getCompPx(U,V,fS,bcx,bcy,axis,side,pos)
+function approxPx = getCompPx(U,V,fS,bcx,bcy,axis,side,pos,count)
 
 tw = fS.tw;
 mu = fS.mu;
 hx = fS.hx;
 hy = fS.hy;
+x  = fS.x;
+y  = fS.y;
+t2 = fS.t2;
 
 % get the index for the corresponding boundary points
 
@@ -272,19 +287,23 @@ if tw > 0
     v = fS.v;   
   
   if axis == 0
-    dudt  =   fS.dudt;    
-    dudx  = - fS.dvdy;
-    dudy  =   fS.dudy;    
+     dudt  =   fS.dudt;    
+     dudx  =   fS.dvdy;
+     dudy  =   fS.dudy; 
+     dudx2  =   fS.dudx2; 
+     dudy2  =   fS.dudy2; 
 
   elseif axis == 1
-    dudt  = fS.dvdt;    
-    dudx  = - fS.dudx;
-    dudy  =   fS.dvdy;    
+     dudt  =   fS.dvdt;    
+     dudx  =   fS.dvdx;
+     dudy  =   fS.dudx; 
+     dudx2  =   fS.dvdx2; 
+     dudy2  =   fS.dvdy2; 
 
     beta = fS.beta;
-    g    = fS.beta;
+    g    = fS.g;
     TemN = fS.TemN;
-    tref = fS.ref;
+    tref = fS.tref;
     
     approxPx =  beta*g*(TemN(iB,jB)-tref);
 
@@ -293,8 +312,8 @@ if tw > 0
   end
   
     approxPx = approxPx - dudt(x(iB,jB),y(iB,jB),t2) ...
-	       + u(x(iB,jB),y(iB,jB),t2).*dudx(x(iB,jB),y(iB,jB),t2) ...
-	       - v(x(iB,jB),y(iB,jB),t2).*dudy(x(iB,jB),y(iB,jB),t2) ;
+	       - (-1)^(axis + 1)*u(x(iB,jB),y(iB,jB),t2).*dudx(x(iB,jB),y(iB,jB),t2) ...
+	       - (-1)^(axis    )*v(x(iB,jB),y(iB,jB),t2).*dudy(x(iB,jB),y(iB,jB),t2) ;
 
 end
 
@@ -308,8 +327,44 @@ end
 
   end
 
-approxPx = approxPx + mu*getCurlCurl(U,V,iB,jB,axis,hx,hy) + f(x(iB,jB),y(iB,jB),t2);
+% approxPx = approxPx + mu*(dudx2(x(iB,jB),y(iB,jB),t2)+dudy2(x(iB,jB),y(iB,jB),t2)) + f(x(iB,jB),y(iB,jB),t2);
+
     
+if length(iB) == 1
+    
+   approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB,jB(1)),y(iB,jB(1)),t2)+dudy2(x(iB,jB(1)),y(iB,jB(1)),t2)) + f(x(iB,jB(1)),y(iB,jB(1)),t2);
+   
+   for i = 2:length(jB)-1
+       approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB,jB(i),axis,hx,hy) + f(x(iB,jB(i)),y(iB,jB(i)),t2);
+   end
+   
+   approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB,jB(end)),y(iB,jB(end)),t2)+dudy2(x(iB,jB(end)),y(iB,jB(end)),t2)) + f(x(iB,jB(end)),y(iB,jB(end)),t2);
+    
+else
+    
+    approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB(1),jB),y(iB(1),jB),t2)+dudy2(x(iB(1),jB),y(iB(1),jB),t2)) + f(x(iB(1),jB),y(iB(1),jB),t2);
+    
+    for i = 2:length(iB)-1
+        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB(i),jB,axis,hx,hy) + f(x(iB(i),jB),y(iB(i),jB),t2);
+    end
+    
+    approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB(end),jB),y(iB(end),jB),t2)+dudy2(x(iB(end),jB),y(iB(end),jB),t2)) + f(x(iB(end  ),jB),y(iB(end  ),jB),t2);
+    
+end
+
+
+
+% if axis == 0
+%     dpdx  =   fS.dpdx;
+%     
+% elseif axis == 1
+%     dpdx  =   fS.dpdy;
+%     
+% end
+% 
+% approxPxE = dpdx(x(iB,jB),y(iB,jB),t2);
+% plot(approxPxE - approxPx)
+
 end
 
 
@@ -318,7 +373,9 @@ function approxCC = getCurlCurl(U,V,iB,jB,axis,hx,hy)
   uCross = U*(axis==1) + V*(axis==0);
   uD     = U*(axis==0) + V*(axis==1);
   
-  approxCC = getUxy(uCross,iB,jB,hx,hy,axis) + getUxx(U,iB,jB,axis,h);
+  axisD = abs(axis-1);
+  
+  approxCC = (-1)*(getUxy(uCross,iB,jB,hx,hy) - getUxx(uD,iB,jB,axisD,hy));
   
 end
 
@@ -333,7 +390,7 @@ approxUxx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
              + 16* U(iB + xShift, jB + yShift) +   ...
              (-1)* U(iB - xShift*2, jB - yShift*2) ...
              + 16* U(iB - xShift, jB - yShift) +   ...
-            (-30)* U(iB           , jB          ) )/h^2;
+            (-30)* U(iB           , jB          ) )/(12*h^2);
 
 end
 
