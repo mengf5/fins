@@ -104,28 +104,45 @@ RHSp(i,j) = - getUx(UN,i,j,axisX,hx).^2 ...
 	    + beta*g*getUx(TemN,i,j,axisY,hy) ...
 	    + cdx*divergence;
 
+%RHSp(i,j) = fS.dpdx2(x(i,j),y(i,j),t2)+fS.dpdy2(x(i,j),y(i,j),t2);
 %--------------------------------------------------------------------------
 % fill in ghost lines
 %--------------------------------------------------------------------------
 
-for axis = 0:1
-  for side = 0:1
-    
-    switch localBC
-                
-      case 1
-        % px = -ut - uux - vuy + mu (uxx+uyy) + fx
-        pos = 1;
-                    
-        [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
-                    
-        RHSp(bcx,bcy) = getCompPx(UN,VN,fS,bcx,bcy,axis,side,pos,count);
+for side = 0:1
+  for axis = 0:1
+      
+      localBC = BC(axis+1,side+1);
+      switch localBC
+          
+          case 1
+              % px = -ut - uux - vuy + mu (uxx+uyy) + fx
+              pos = 1;
+              
+              [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+              
+              RHSp(bcx,bcy) = getCompPx(UN,VN,fS,bcx,bcy,axis,side,pos,count);
+        
+        
+%         iB = (axis==0)*(bcx + (-1)^side*pos) + (axis==1)*bcx;
+%         jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
+% 
+%         if axis == 0
+%             
+%             RHSp(bcx,bcy) = fS.dpdx(x(iB,jB),y(iB,jB),t2);
+%             
+%         elseif axis==1
+%             
+%             RHSp(bcx,bcy) = fS.dpdy(x(iB,jB),y(iB,jB),t2);
+%             
+%         end
           
         pos = 2;
                     
         [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
                     
         RHSp(bcx,bcy)  = getZero(bcx,bcy);
+%RHSp(bcx,bcy) = p(x(bcx,bcy),y(bcx,bcy),t2);
                     
       case 3
         % p = p(t)
@@ -145,6 +162,86 @@ for axis = 0:1
   end
 end
 
+    %----------------------------------------------------------------
+    % on the physical corner and its extension (ghost points)
+    %----------------------------------------------------------------
+    
+    for sideX = 0:1
+        for sideY = 0:1
+            
+            pxC = (sideX==0)*ia + (sideX==1)*ib;
+            pyC = (sideY==0)*ja + (sideY==1)*jb;
+            
+            chooseBC(1) = BC(1,1+sideX);
+            chooseBC(2) = BC(2,1+sideY);
+            
+            if max( chooseBC ) < 4
+                
+                [localBC,whichBC] =  max( chooseBC );
+                axisBC = (whichBC -1);
+                
+            else
+                fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+                fprintf('proceed with extreme caution \n');
+                pause;
+                
+            end
+            
+            switch localBC
+                
+                case 1
+                    %do nothing
+                case 2
+                    
+                    side = (axisBC==0)*sideX + (axisBC==1)*sideY;
+                    sideMatch = abs(side-1);
+                    
+                    if side == 0
+                        %do nothing
+                        
+                    elseif side == 1
+                        
+                        % * = (Nx,Ny)
+                        %
+                        %       #
+                        %       #
+                        % xxxxxx*oo
+                        %       x
+                        %       x
+                        %       x
+                        
+                        for pos = 0:2 % fixing *oo
+                            
+                            px = pxC + (axisBC == 0) * pos;
+                            py = pyC + (axisBC == 1) * pos;
+                            
+                            RHSp(px,py) = 0;
+                            
+                        end
+                        
+                        
+                        for pos = 1:2 % fixing ##
+                            
+                            px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
+                            py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
+                            
+                            RHSp(px,py) = 0;
+                            
+                        end
+                        
+                        
+                    end
+                    
+                    
+                case 3
+                    %do nothing
+                    
+            end
+            
+            
+        end
+    end
+    
 %--------------------------------------------------------------------------
 % now fix em corner points
 %--------------------------------------------------------------------------
@@ -186,7 +283,7 @@ for sideX = 0:1
     switch localBC
         
         case 1
-            
+%             
             RHSp(px1,py1) = p(x(px1,py1),y(px1,py1),t2);
             
             RHSp(px2,py2) = p(x(px2,py2),y(px2,py2),t2);
@@ -239,7 +336,8 @@ end
 
 if flagAddRow == 1
  
-  RHSimp = [RHSimp 0];
+    totP = sum(sum(p(x,y,t2)));
+  RHSimp = [RHSimp totP];
 
 end
 
@@ -279,7 +377,8 @@ jB = (axis==1)*(bcy + (-1)^side*pos) + (axis==0)*bcy;
 % if twilightZone forcing is given, use exact dudx,
 % otherwise, use approximated dudx
 
-approxPx = 0;
+sizePx = (axis==0)*length(jB) + (axis==1)*length(iB) ;
+approxPx = zeros(1,sizePx);
 
 if tw > 0
 
@@ -329,40 +428,110 @@ end
 
 % approxPx = approxPx + mu*(dudx2(x(iB,jB),y(iB,jB),t2)+dudy2(x(iB,jB),y(iB,jB),t2)) + f(x(iB,jB),y(iB,jB),t2);
 
-    
+% h     = (axis==0)*hx + (axis==1)*hy; 
+% hP    = (axis==0)*hy + (axis==1)*hx;
+% axisP = abs(axis-1);
+% 
+% uD = (axis==0)*U + (axis==1)*V; 
+% 
+% approxPx = approxPx + mu*getCurlCurl(U,V,iB,jB,axis,hx,hy) + f(x(iB,jB),y(iB,jB),t2);
+% 
+% if length(iB) == 1
+% 
+%     fixIndexI = iB;
+%     fixIndexJ = [jB(1),jB(end)];
+%     
+% else
+%     
+%     fixIndexI = [iB(1),iB(end)];
+%     fixIndexJ = jB;
+% 
+% end
+% 
+% indexPx = [1,length(approxPx)];
+
+% for n = 1:2
+% 
+%     if length(iB) == 1
+%         fixI = fixIndexI;
+%         fixJ = fixIndexJ(n);
+%         
+%     else
+%         fixI = fixIndexI(n);
+%         fixJ = fixIndexJ;
+%     end
+%     
+%     if tw>0
+%     
+%         approxDu = dudx2(x(fixI,fixJ),y(fixI,fixJ),t2)+dudy2(x(fixI,fixJ),y(fixI,fixJ),t2);
+%     else
+%         
+%         approxDu = getUxx(uD,fixI,fixJ,axis,h) + getUxx(uD,fixI,fixJ,axisP,hP);
+%    
+%     end
+% 
+%     
+%     approxPx(indexPx(n))   =  approxPx(indexPx(n)) ...
+%         + mu*(approxDu) + f(x(fixI,fixJ),y(fixI,fixJ),t2);
+%     
+% end
+
+% plot(approxPx);
+% hold on
+%approxPx = 0;
+
+twilightZone = fS.twilightZone;
+
 if length(iB) == 1
     
-   approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB,jB(1)),y(iB,jB(1)),t2)+dudy2(x(iB,jB(1)),y(iB,jB(1)),t2)) + f(x(iB,jB(1)),y(iB,jB(1)),t2);
-   
-   for i = 2:length(jB)-1
-       approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB,jB(i),axis,hx,hy) + f(x(iB,jB(i)),y(iB,jB(i)),t2);
-   end
-   
-   approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB,jB(end)),y(iB,jB(end)),t2)+dudy2(x(iB,jB(end)),y(iB,jB(end)),t2)) + f(x(iB,jB(end)),y(iB,jB(end)),t2);
+    if twilightZone<=6
+        approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB,jB(1)),y(iB,jB(1)),t2)+dudy2(x(iB,jB(1)),y(iB,jB(1)),t2)) + f(x(iB,jB(1)),y(iB,jB(1)),t2);
+    else
+        approxPx(1)   =  0;
+    end
     
+    for i = 2:length(jB)-1
+        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB,jB(i),axis,hx,hy) + f(x(iB,jB(i)),y(iB,jB(i)),t2);
+    end
+    
+    if twilightZone<=6
+        
+        approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB,jB(end)),y(iB,jB(end)),t2)+dudy2(x(iB,jB(end)),y(iB,jB(end)),t2)) + f(x(iB,jB(end)),y(iB,jB(end)),t2);
+    else
+        approxPx(end) =  0;
+    end
 else
-    
-    approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB(1),jB),y(iB(1),jB),t2)+dudy2(x(iB(1),jB),y(iB(1),jB),t2)) + f(x(iB(1),jB),y(iB(1),jB),t2);
+    if twilightZone<=6
+        
+        approxPx(1)   =  approxPx(1) + mu*(dudx2(x(iB(1),jB),y(iB(1),jB),t2)+dudy2(x(iB(1),jB),y(iB(1),jB),t2)) + f(x(iB(1),jB),y(iB(1),jB),t2);
+        
+    else
+        approxPx(1)   =  0;
+    end
     
     for i = 2:length(iB)-1
         approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB(i),jB,axis,hx,hy) + f(x(iB(i),jB),y(iB(i),jB),t2);
     end
-    
-    approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB(end),jB),y(iB(end),jB),t2)+dudy2(x(iB(end),jB),y(iB(end),jB),t2)) + f(x(iB(end  ),jB),y(iB(end  ),jB),t2);
+
+    if twilightZone<=6
+        approxPx(end) =  approxPx(end) + mu*(dudx2(x(iB(end),jB),y(iB(end),jB),t2)+dudy2(x(iB(end),jB),y(iB(end),jB),t2)) + f(x(iB(end  ),jB),y(iB(end  ),jB),t2);
+    else
+        approxPx(end) =  0;
+    end
     
 end
 
 
 
-% if axis == 0
-%     dpdx  =   fS.dpdx;
-%     
-% elseif axis == 1
-%     dpdx  =   fS.dpdy;
-%     
-% end
-% 
-% approxPxE = dpdx(x(iB,jB),y(iB,jB),t2);
+if axis == 0
+    dpdx  =   fS.dpdx;
+    
+elseif axis == 1
+    dpdx  =   fS.dpdy;
+    
+end
+
+%approxPxE = dpdx(x(iB,jB),y(iB,jB),t2);
 % plot(approxPxE - approxPx)
 
 end

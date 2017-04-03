@@ -618,6 +618,89 @@ elseif tExplicit == 0
         end
     end
     
+    %----------------------------------------------------------------
+    % on the physical corner and its extension (ghost points)
+    %----------------------------------------------------------------
+    
+    for sideX = 0:1
+        for sideY = 0:1
+            
+            pxC = (sideX==0)*ia + (sideX==1)*ib;
+            pyC = (sideY==0)*ja + (sideY==1)*jb;
+            
+            chooseBC(1) = BC(1,1+sideX);
+            chooseBC(2) = BC(2,1+sideY);
+            
+            if max( chooseBC ) < 4
+                
+                [localBC,whichBC] =  max( chooseBC );
+                axisBC = (whichBC -1);
+                
+            else
+                fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+                fprintf('proceed with extreme caution \n');
+                pause;
+                
+            end
+            
+            switch localBC
+                
+                case 1
+                    %do nothing
+                case 2
+                    
+                    side = (axisBC==0)*sideX + (axisBC==1)*sideY;
+                    sideMatch = abs(side-1);
+                    
+                    if side == 0
+                        %do nothing
+                        
+                    elseif side == 1
+                        
+                        % * = (Nx,Ny)
+                        %
+                        %       #
+                        %       #
+                        % xxxxxx*oo
+                        %       x
+                        %       x
+                        %       x
+                        
+                        for pos = 0:2 % fixing *oo
+                            
+                            px = pxC + (axisBC == 0) * pos;
+                            py = pyC + (axisBC == 1) * pos;
+                            
+                            rhsU(px,py) = 0;
+                            rhsV(px,py) = 0;
+                            
+                        end
+                        
+                        
+                        for pos = 1:2 % fixing ##
+                            
+                            px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
+                            py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
+                            
+                            rhsU(px,py) = 0;
+                            rhsV(px,py) = 0;
+                            
+                        end
+                        
+                        
+                    end
+                    
+                    
+                case 3
+                    %do nothing
+                    
+            end
+            
+            
+        end
+    end
+    
+    
     %--------------------------------------------------------------------------
     % now fix em corner points
     %--------------------------------------------------------------------------
@@ -958,13 +1041,13 @@ end
 
 
 function Uxxx = getCompUxxx(fS,count,i,j)
-
+tw = fS.tw;
 t2 = fS.t2;
 x = fS.x;
 y = fS.y;
 
-dvdx2y = fS.dvdx2y;
-Uxxx  = -dvdx2y(x(i,j),y(i,j),t2);
+%dvdx2y = fS.dvdx2y;
+%Uxxx  = -dvdx2y(x(i,j),y(i,j),t2);
 %return
 
 % dudx3 = -dvdx2y
@@ -986,16 +1069,24 @@ order=2;
 hy = fS.hy;
 
 dpdy2Approx = getDpdx(fS,i,j,count,1,hy,order);
-%dpdy2 = (P(i,j+1) - 2*P(i,j) + P(i,j-1))/(hy^2);
+%dpdy2Approx = fS.dpdy2(x(i,j),y(i,j),t2);
 
 %dudx3 = -dvdx2y(x(i,j),y(i,j),t2);
-Uxxx = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
-    + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
-    + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
-    + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
-    + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
-    + dpdy2Approx - dfydy(x(i,j),y(i,j),t2));
-
+if tw == 1
+    
+    Uxxx = dvdy3(x(i,j),y(i,j),t2) - 1/mu*(dvdty(x(i,j),y(i,j),t2) ...
+        + dudy(x(i,j),y(i,j),t2).*dvdx(x(i,j),y(i,j),t2) ...
+        + u(x(i,j),y(i,j),t2).*dvdxy(x(i,j),y(i,j),t2) ...
+        + dvdy(x(i,j),y(i,j),t2).*dvdy(x(i,j),y(i,j),t2) ...
+        + v(x(i,j),y(i,j),t2).*dvdy2(x(i,j),y(i,j),t2) ...
+        + dpdy2Approx - dfydy(x(i,j),y(i,j),t2));
+    
+elseif tw == 0
+    
+    Uxxx =  - 1/mu*( ...
+        + dpdy2Approx - dfydy(x(i,j),y(i,j),t2));
+    
+end
 
 end
 
@@ -1034,7 +1125,7 @@ if axis == 0
     dpdx =  fS.dpdx ;
 
 elseif axis == 1
-    fx = fS.fy;
+    fx   = fS.fy;
     dpdx =  fS.dpdy ;
 
 end
@@ -1073,7 +1164,7 @@ if tw > 0
     
 elseif tw == 0
     
-    Uxx =  U(bcx,bcy) - getUxx(U,iB,jB,axis,h);
+    Uxx =  Uxx - getUxx(U,iB,jB,axis,h);
     
 end
 
@@ -1106,13 +1197,13 @@ if count == 1
     PP1 = fS.PP1;
     PP2 = fS.PP2;
     
-    PEXT =  coeff(1)*PC ...
+    PE =  coeff(1)*PC ...
         + coeff(2)*PP1 ...
         + coeff(3)*PP2;
     
 elseif count > 1
     
-    PEXT = fS.PN;
+    PE = fS.PN;
     
 end
 
@@ -1120,9 +1211,31 @@ xShift =   (axis==0);
 yShift =   (axis==1);
 
 if order == 1
-    dpdx  = (PEXT(i+xShift,j+yShift) - PEXT(i-xShift,j-yShift))/(2*h);
+    
+    dpdx  = ((-1)* PE(i + xShift*2, j + yShift*2) ...
+    + 8* PE(i + xShift, j + yShift) + ...
+    (+1)* PE(i - xShift*2, j - yShift*2) ...
+    - 8* PE(i - xShift, j - yShift)  ...
+    )/(12*h);
+
+
+%     dpdx  = ( ...
+%     + 1* PE(i + xShift, j + yShift) + ...
+%     - 1* PE(i - xShift, j - yShift)  ...
+%     )/(2*h);
+    
 elseif order == 2
-    dpdx  = (PEXT(i+xShift,j+yShift) - 2*PEXT(i,j) + PEXT(i-xShift,j-yShift))/(h^2);
+    dpdx  = ((-1)* PE(i + xShift*2, j + yShift*2) ...
+    + 16* PE(i + xShift, j + yShift) +   ...
+    (-1)* PE(i - xShift*2, j - yShift*2) ...
+    + 16* PE(i - xShift, j - yShift) +   ...
+    (-30)* PE(i           , j          ) )/(12*h^2);
+
+%     dpdx  = ( ...
+%     + 1* PE(i + xShift, j + yShift) +   ...
+%     + 1* PE(i - xShift, j - yShift) +   ...
+%     (-2)* PE(i           , j          ) )/(h^2);
+
 end
 
 end
@@ -1139,7 +1252,7 @@ approxUxx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
     + 16* U(iB + xShift, jB + yShift) +   ...
     (-1)* U(iB - xShift*2, jB - yShift*2) ...
     + 16* U(iB - xShift, jB - yShift) +   ...
-    (-30)* U(iB           , jB          ) )/h^2;
+    (-30)* U(iB           , jB          ) )/(12*h^2);
 
 end
 
@@ -1193,9 +1306,9 @@ xShift =   (axis==0);
 yShift =   (axis==1);
 
 approxUx = ((-1)* U(iB + xShift*2, jB + yShift*2) ...
-    + 16* U(iB + xShift, jB + yShift) + ...
-    (-1)* U(iB - xShift*2, jB - yShift*2) ...
-    + 16* U(iB - xShift, jB - yShift)  ...
+    + 8* U(iB + xShift, jB + yShift) + ...
+    (+1)* U(iB - xShift*2, jB - yShift*2) ...
+    - 8* U(iB - xShift, jB - yShift)  ...
     )/(12*h);
 end
 

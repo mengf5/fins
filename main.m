@@ -24,7 +24,8 @@ if fS.makeMovie == 1
     open(movieV);
     open(movieP);
     
-    gcf=figure(1);
+    %gcf=figure(1);
+    gcf = figure('Visible','off');
             %set(gcf,'visible','off');
     
 end
@@ -121,6 +122,10 @@ Lp =  formLHSP(fS);
 toc
 
 fS.Lp = Lp;
+
+% Lp2 = formLHSp1(fS);
+
+
 
 if fS.directSolve == 0
     tic
@@ -309,16 +314,18 @@ while (t2 - tend) < eps-dt/4
     %end
     
     P2 = PressureSolverNew(t2,count,fS);
-    %Pt = fS.p(x,y,t2);
-    %max(max(abs(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))...
-    %    -abs(mean(mean(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))))))
-    
+%     Pt = fS.p(x,y,t2);
+%     max(max(abs(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))...
+%          -abs(mean(mean(P2(3:end-2,3:end-2)-Pt(3:end-2,3:end-2))))))
+%     
     fS.PN   = P2;
     
     for k = 1:correct
         
         [count,U2,V2] = VelocitySolverNew(t2,t2,count,fS);
-        
+%           U2 = fS.u(x,y,t2);
+%     V2 = fS.v(x,y,t2);
+    
         Tem2 = fS.tem(x,y,t2);
         
         fS.UN   = U2;
@@ -541,10 +548,12 @@ end
                 G  = 1;
             elseif fS.twilightZone == 8
                 G  = 0;
+            elseif fS.twilightZone == 9
+                G  = f(5);
             end
             
-            fx = G + eps*x + eps*y + eps*t;
-            fy = eps*x + eps*y + + eps*t;
+            fx(x,y,t) = G + eps*x + eps*y + eps*t;
+            fy(x,y,t) = eps*x + eps*y + + eps*t;
             
             if fS.twilightZone == 8
                 G = 1;
@@ -561,7 +570,7 @@ end
                 end
                 
             else
-                fS.u  = matlabFunction(u);
+                fS.u  = matlabFunction(real(u));
             end
             
             fS.v  = matlabFunction(v);
@@ -617,17 +626,17 @@ end
         dpdy2 = diff(p,y,2);
         
         
-        fx = dudt + u*dudx +v*dudy + dpdx - mu*dudx2 - mu*dudy2;
-        fy = dvdt + u*dvdx +v*dvdy + dpdy - mu*dvdx2 - mu*dvdy2 - beta*g*(tem-tref);
+        fx = simplify(dudt + u*dudx +v*dudy + dpdx - mu*dudx2 - mu*dudy2);
+        fy = simplify(dvdt + u*dvdx +v*dvdy + dpdy - mu*dvdx2 - mu*dvdy2 - beta*g*(tem-tref));
         %pause
         dfxdx = diff(fx,x);
         dfydy = diff(fy,y);
         
-        fxE = dudt + u*dudx +v*dudy + dpdx;
-        fyE = dvdt + u*dvdx +v*dvdy + dpdy - beta*g*(tem-tref);
+        fxE = simplify(dudt + u*dudx +v*dudy + dpdx);
+        fyE = simplify(dvdt + u*dvdx +v*dvdy + dpdy - beta*g*(tem-tref));
         
-        fxI = - mu*dudx2 - mu*dudy2;
-        fyI = - mu*dvdx2 - mu*dvdy2;
+        fxI = simplify(- mu*dudx2 - mu*dudy2);
+        fyI = simplify(- mu*dvdx2 - mu*dvdy2);
             
         % Expression for the boundary condition
         ubc = u;
@@ -690,7 +699,8 @@ end
         fS.dpdx  = matlabFunction(dpdx);
 
         fS.dpdy  = matlabFunction(dpdy);
-        
+        fS.dpdy2  = matlabFunction(dpdy2);
+        fS.dpdx2  = matlabFunction(dpdx2);
 %         
 %         dudxt = matlabFunction(dudxt);
 %         dudx2 = matlabFunction(dudx2);
@@ -782,3 +792,6 @@ end
 errf(3)=err(4,end);
 
 end
+
+
+

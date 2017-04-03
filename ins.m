@@ -90,7 +90,7 @@ classdef ins < handle
       fx;fy;ftem; dfxdx;dfydy;
       dudt;dvdt; dubcdt;dvbcdt;
       dudx; dvdx; dudy; dvdy;
-      dvdy2; dvdy3; dvdx2; dudx2; dudy2;
+      dvdy2; dvdy3; dvdx2; dudx2; dudy2;dpdy2;dpdx2;
       fxE;fyE;fxI;fyI;
       dpdx;dpdy;dudxy;dvdxy;dvdty;dvdx2y;
       

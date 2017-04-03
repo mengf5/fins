@@ -1,0 +1,46 @@
+Bc = [1,1;1,1]  no slip wall
+
+adaptive time-step
+
+poly: 3rd order in time, second order in space exact 
+ 
+trig: 4th order accurate 
+
+Only second order with Taylor Green(no-slip)
+-----------------------------------------------------------------
+
+Bc = [1,1;1,1]  no slip wall
+
+fixed CFL = 0.9;
+
+Taylor Green with exact pressure
+
+mesh size =  0.08378 err = 3.966260e-05 4.109176e-05 0.000000e+00 
+mesh size =  0.04189 err = 2.668672e-06 2.671816e-06 0.000000e+00
+
+14.85 15.45
+
+only solve pressure
+
+mesh size =  0.08378 err = 0.000000e+00 0.000000e+00 9.916088e-04 
+mesh size =  0.04189 err = 0.000000e+00 0.000000e+00 2.942777e-04
+
+3.37
+
+periodic
+
+16..
+
+
+Trig, only solve pressure [1,1;1,1]
+
+mesh size =  0.04000 err = 0.000000e+00 0.000000e+00 1.639388e-05 
+mesh size =  0.02667 err = 0.000000e+00 0.000000e+00 3.264529e-06 
+mesh size =  0.02000 err = 0.000000e+00 0.000000e+00 1.036860e-06 
+mesh size =  0.01333 err = 0.000000e+00 0.000000e+00 2.048015e-07 
+
+
+
+-----------------------------------------------------------------
+Transient poiseuille flow
+

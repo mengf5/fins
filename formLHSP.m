@@ -5,7 +5,7 @@ Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 
 Nx = fS.Nx;
-%Ny = fS.Ny;
+Ny = fS.Ny;
 
 ia = fS.ia;
 ib = fS.ib;
@@ -31,14 +31,15 @@ lhsP = setPoission(lhsP,hx,hy,Nyg,M,intPts,lIntPts);
 
 % assembling boundary conditions
 % x-direction
-for axis = 0:1
-    for side = 0:1
+for side = 0:1
+    for axis = 0:1
         
         localBC = BC(axis+1,side+1);
         % get the boundary indecies
         pos = 0;
         [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
         
+        %------------------------------------------------------------------
         % if the corner point has been set, set them to zero
         %------------------------------------------------------------------
         bcxStart = (side==0)*ia + (side==1)*ib;
@@ -96,7 +97,7 @@ for axis = 0:1
             case 5
                 
         end
-        
+        %------------------------------------------------------------------
         % on the ghost lines
         %------------------------------------------------------------------
         switch localBC
@@ -127,6 +128,10 @@ for axis = 0:1
                     lhsP  = setExt4(lhsP,side,1,M,bcPts);
                     
                 end
+                
+%                 [bcPts,lBcPts] = getBCGLIndex(fS,axis,side,pos);
+%                     pm    = 1;
+%                     lhsP  = setOne(lhsP,M,pm,bcPts,bcPts,lBcPts);
                 
             case 2
                 % P(ia-i,j)  = P(Nx - i,j)
@@ -165,14 +170,119 @@ for axis = 0:1
 end
 
 % Note the righ-bottom corner point (A)
-% _____
+% _____A
 %|     |
 %|     |
-%|_____A
+%|_____|
 %
 % since the boundary condition is given in order of:
-%left - right- bottom -top
-% point A is contaminated by the bottom boundary condition
+%left - bottom - right - top
+% point A is contaminated by the top boundary condition
+
+%----------------------------------------------------------------
+% on the physical corner and its extension (ghost points)
+%----------------------------------------------------------------
+
+for sideX = 0:1
+    for sideY = 0:1
+
+      pxC = (sideX==0)*ia + (sideX==1)*ib;
+      pyC = (sideY==0)*ja + (sideY==1)*jb;
+      
+      chooseBC(1) = BC(1,1+sideX);
+      chooseBC(2) = BC(2,1+sideY);
+      
+      if max( chooseBC ) < 4
+        
+        [localBC,whichBC] =  max( chooseBC );
+        axisBC = (whichBC -1);
+        
+      else
+        fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+        fprintf('proceed with extreme caution \n');
+        pause;
+        
+      end
+
+      switch localBC
+             
+        case 1
+            %do nothing 
+	case 2
+
+	  side = (axisBC==0)*sideX + (axisBC==1)*sideY;
+      sideMatch = abs(side-1);
+
+	  if side == 0
+	    %do nothing
+
+	  elseif side == 1
+	    
+        % * = (Nx,Ny)
+	    %
+        %       #
+        %       #
+	    % xxxxxx*oo
+	    %       x
+	    %       x
+	    %       x
+	    
+	    for pos = 0:2 % fixing *oo
+
+	      px = pxC + (axisBC == 0) * pos;
+	      py = pyC + (axisBC == 1) * pos;
+
+	      pxIndex = getIndex(fS,px,px,py,py);
+	      lPxIndex = 1;
+          lhsP = setZero(lhsP,M,pxIndex,lPxIndex);
+	      
+          lhsP = setOne(lhsP,M,+1,pxIndex,pxIndex,lPxIndex);
+
+          matchPx = px - (axisBC==0)*(Nx-1);
+          matchPy = py - (axisBC==1)*(Ny-1);
+          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+
+	      lhsP = setOne(lhsP,M,-1,pxIndex,matchPxIndex,lPxIndex);
+
+	    end
+
+
+	    for pos = 1:2 % fixing ##
+
+	      px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
+	      py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
+
+	      pxIndex = getIndex(fS,px,px,py,py);
+	      lPxIndex = 1;
+	      
+              lhsP = setZero(lhsP,M,pxIndex,lPxIndex);
+
+	      lhsP = setOne(lhsP,M,+1,pxIndex,pxIndex,lPxIndex);
+
+          matchPx = px - (axisBC==0)*(Nx-1);
+          matchPy = py - (axisBC==1)*(Ny-1);
+          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+            
+	      lhsP = setOne(lhsP,M,-1,pxIndex,matchPxIndex,lPxIndex);
+
+	    end
+	    
+	    
+	  end
+	  
+
+	case 3
+	  %do nothing
+
+      end
+      
+      
+    end
+end
+
+%----------------------------------------------------------------
+% on the ghost corners
+%----------------------------------------------------------------
 
 for sideX = 0:1
     for sideY = 0:1
@@ -196,10 +306,27 @@ for sideX = 0:1
         px2Index = getIndex(fS,px2,px2,py2,py2);
         px3Index = getIndex(fS,px3,px3,py3,py3);
         px4Index = getIndex(fS,px4,px4,py4,py4);
-        
+
+
+
+	chooseBC(1) = BC(1,1+sideX);
+	chooseBC(2) = BC(2,1+sideY);
+	
+	if max( chooseBC ) < 4
+          
+          [localBC,whichBC] =  max( chooseBC );
+          axisBC = (whichBC -1);
+          
+	else
+          fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+          fprintf('proceed with extreme caution \n');
+          pause;
+          
+	end
+	
         switch localBC
-            
-            case 1
+
+          case 1
                 
                 for i = 1:3
                     px1E(i) = px1 + (-1)^(sideX)*i;
@@ -418,6 +545,22 @@ function L  = setExt4(L,side,Stride,M,pts)
 
 extOrder = 4;
 coeff = [1, -4, 6, -4, 1];
+
+for i = 1:extOrder+1
+    
+    shift  =  ((-1)^side)*(i-1)*Stride;
+    
+    ptsShift = pts + shift;
+    
+    L   = L + sparse(pts,ptsShift, coeff(i),M,M);
+end
+
+end
+
+function L = setExt(L,side,Stride,M,pts)
+
+extOrder = 6;
+coeff = [1, -6, 15, -20, 15, -6, 1];
 
 for i = 1:extOrder+1
     

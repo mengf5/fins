@@ -194,17 +194,125 @@ for side = 0:1
 end
 
 % Note the righ-bottom corner point (A)
-% _____
+% _____A
 %|     |
 %|     |
-%|_____A
+%|_____|
 %
 % since the boundary condition is given in order of:
-%left - right- bottom -top
-% point A is contaminated by the bottom boundary condition
+%left - bottom - right - top
+% point A is contaminated by the top boundary condition
 
 %----------------------------------------------------------------
-% now fix em corner points
+% on the physical corner and its extension (ghost points)
+%----------------------------------------------------------------
+
+for sideX = 0:1
+    for sideY = 0:1
+
+      pxC = (sideX==0)*ia + (sideX==1)*ib;
+      pyC = (sideY==0)*ja + (sideY==1)*jb;
+      
+      chooseBC(1) = BC(1,1+sideX);
+      chooseBC(2) = BC(2,1+sideY);
+      
+      if max( chooseBC ) < 4
+        
+        [localBC,whichBC] =  max( chooseBC );
+        axisBC = (whichBC -1);
+        
+      else
+        fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+        fprintf('proceed with extreme caution \n');
+        pause;
+        
+      end
+
+      switch localBC
+             
+        case 1
+            %do nothing 
+	case 2
+
+	  side = (axisBC==0)*sideX + (axisBC==1)*sideY;
+      sideMatch = abs(side-1);
+
+	  if side == 0
+	    %do nothing
+
+	  elseif side == 1
+	    
+        % * = (Nx,Ny)
+	    %
+        %       #
+        %       #
+	    % xxxxxx*oo
+	    %       x
+	    %       x
+	    %       x
+	    
+	    for pos = 0:2 % fixing *oo
+
+	      px = pxC + (axisBC == 0) * pos;
+	      py = pyC + (axisBC == 1) * pos;
+
+	      pxIndex = getIndex(fS,px,px,py,py);
+	      lPxIndex = 1;
+          lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
+          lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
+
+          lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);	      
+          lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
+          
+          matchPx = px - (axisBC==0)*(Nx-1);
+          matchPy = py - (axisBC==1)*(Ny-1);
+          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+
+	      lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
+          lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
+
+	    end
+
+
+	    for pos = 1:2 % fixing ##
+
+	      px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
+	      py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
+
+	      pxIndex = getIndex(fS,px,px,py,py);
+	      lPxIndex = 1;
+          
+          lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
+          lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
+          
+          lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);
+          lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
+          
+          matchPx = px - (axisBC==0)*(Nx-1);
+          matchPy = py - (axisBC==1)*(Ny-1);
+          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+          
+          lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
+          lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
+
+	    end
+	    
+	    
+	  end
+	  
+
+	case 3
+	  %do nothing
+
+      end
+      
+      
+    end
+end
+
+
+%----------------------------------------------------------------
+% now fix em ghost corner points
 %----------------------------------------------------------------
 for sideX = 0:1
     for sideY = 0:1
