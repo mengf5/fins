@@ -552,8 +552,8 @@ end
                 G  = f(5);
             end
             
-            fx(x,y,t) = G + eps*x + eps*y + eps*t;
-            fy(x,y,t) = eps*x + eps*y + + eps*t;
+            fx(x,y,t) = G + 0*x + 0*y + 0*t;
+            fy(x,y,t) = 0*x + 0*y + + 0*t;
             
             if fS.twilightZone == 8
                 G = 1;
@@ -759,18 +759,26 @@ end
         subplot(2,2,1);
         surf(x,y,V2-Vt)
         shading interp
+        view([90 90]);
+        colorbar
         title('error V','FontSize',16);
+        
         subplot(2,2,2);
         surf(x,y,U2-Ut)
         shading interp
+        view([90 90]);
+        colorbar
         title('error U','FontSize',16);
-%         subplot(2,2,3);
-%         surf(x,y,Tem2-Tt)
-%         title('error T','FontSize',16);
+        %         subplot(2,2,3);
+        %         surf(x,y,Tem2-Tt)
+        %         title('error T','FontSize',16);
         subplot(2,2,3);
+        
         surf(x,y,abs(P2-Pt) - abs(mean(mean(P2-Pt))))
         shading interp
-        title('error P','FontSize',16);        
+        view([90 90]);
+        colorbar
+        title('error P','FontSize',16);
     end
 
 pl=figure('visible','off');

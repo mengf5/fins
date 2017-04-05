@@ -2,13 +2,14 @@ function caseConvergence(varargin)
 
 % clearvars -except err rate
 close all
-nameappenSetup = 'tz8';
+nameappenSetup = 'tz9Check';
 %8378 for test
 
-cg3 = 0;
+cg3 = 1;
+sm = 1e-300;
 
 fS     =ins;
-fS.tEnd=.3;
+fS.tEnd=2.;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
@@ -21,25 +22,25 @@ fS.CFLfix=.9;
 fS.directSolve = 1;
 
 fS.plotting = 0;
-fS.makeMovie =1;
+fS.makeMovie =0;
 
 fS.BC = [2 2;1 1];
-fS.twilightZone = 8; % 1 for trigSpolyT, 2 for poly2
-if fS.twilightZone >= 7;
+fS.twilightZone = 9; % 1 for trigSpolyT, 2 for poly2
+if fS.twilightZone >= 9;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else
     fS.tw=1;
 end
 fS.cons = 1;         % 1 adv             2 divR         3 skew
 fS.alpha = 0.01;
-fS.WENO = 1;
+fS.WENO = 0;
 fS.uw = 0;
 
-gridx = [76 151];
-gridy = [76 151];
+gridx = [76 151 301];
+gridy = [76 151 301];
 
-gridx = [401];
-gridy = [401];
+%gridx = [11];
+%gridy = [11];
 
 %with cfl =.9, tw == 4, tEnd=1.1, gridx=gridy = 401; This takes roughly 9 hours with direct solve
 
@@ -51,7 +52,7 @@ fS.domain = [-1 1; -1 1];
 
 fS.al                 =  0.01;                                         % thermal diffusitity, alpha
 fS.K                  =  0;                                           % thermal conductivity K
-fS.mu                 =  .001;                                          % Kinematic viscosity nu
+fS.mu                 =  .01;                                          % Kinematic viscosity nu
 fS.tref               =  2;                                           % Treference T_{\infty};
 fS.beta               =  1;                                           % thermal expansion
 fS.g                  =  0;                                           % gravity g
@@ -169,10 +170,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
         f(3) = (x^3+1/2*x*y+y^3-1)*(1+2*t+2*t^2+1/3*t^3);
         f(4) = (2+x+y/2+x^2/2+y^2/4)*(1+2*t+2*t^2+1/3*t^3);
 
-        f(1) = (x^3+y^3-3*x*y^2)*(1+2*t);
-        f(2) = (x^3+y^3-3*x^2*y)*(1+2*t);
-        f(3) = (x^3+1/2*x*y+y^3-1)*(1+2*t);
-        f(4) = (2+x+y/2+x^2/2+y^2/4)*(1+2*t);
+%         f(1) = (x^3+y^3-3*x*y^2)*(1+2*t);
+%         f(2) = (x^3+y^3-3*x^2*y)*(1+2*t);
+         f(3) = (x^3+1/2*x*y+y^3-1)*(1+2*t+t^2);
+%         f(4) = (2+x+y/2+x^2/2+y^2/4)*(1+2*t);
 
     case 4 %% trig
         f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t*0.2));
@@ -187,6 +188,11 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
     case 6  %% taylor green in domain [0,2*pi] with periodicity 
          
         k = pi*1.3;
+        
+        if min(min(fS.BC))==2
+            
+            k = pi;
+        end
         f(1) =  sin(k*x)*cos(k*y)*(exp(-2*fS.mu*t*k^2));
         f(2) =  sin(k*y)*cos(k*x)*(-exp(-2*fS.mu*t*k^2));
         f(3) = 1/4*(cos(2*x*k) + cos(2*y*k))*(exp(-4*fS.mu*t*k^2));
@@ -195,10 +201,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
         G = 1;
         H = fS.domain(2,2);
         mu = fS.mu;
-        f(1) = eps*x + eps*y + eps*t+ G*H^2/(2*mu)*(1 - y.^2/H^2);
-        f(2) = eps*x + eps*y + eps*t;
-        f(3) = eps*x + eps*y + eps*t;
-        f(4) = eps*x + eps*y + eps*t;
+        f(1) = sm*x + sm*y + sm*t+ G*H^2/(2*mu)*(1 - y.^2/H^2);
+        f(2) = sm*x + sm*y + sm*t;
+        f(3) = sm*x + sm*y + sm*t;
+        f(4) = sm*x + sm*y + sm*t;
         fS.BC = [2 2;1 1];
         
     case 8 
@@ -206,11 +212,11 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
         H = fS.domain(2,2);
         delta = 0.25;
         
-        f(1) = eps*x + eps*y + eps*t+ ((y>0).*G*H^2/(2)*(1 - y.^2/H^2)) ...
+        f(1) = sm*x + sm*y + sm*t+ ((y>0).*G*H^2/(2)*(1 - y.^2/H^2)) ...
             + ((y<=0).*(-G)*H^2/(2)*(1 - y.^2/H^2));
-        f(2) = delta*(sin(-pi*x)).*exp(-10*(y.^2/H^2))  + eps*t;
-        f(3) = eps*x + eps*y + eps*t;
-        f(4) = eps*x + eps*y + eps*t; 
+        f(2) = delta*(sin(-pi*x)).*exp(-10*(y.^2/H^2))  + sm*t;
+        f(3) = sm*x + sm*y + sm*t;
+        f(4) = sm*x + sm*y + sm*t; 
         
     case 9 
         p1 = 1;
@@ -219,11 +225,11 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
         H = fS.domain(2,2);
         mu = fS.mu;
         
-        f(1) = eps*x + eps*y + eps*t+   1i*p1/(k)*(cosh(y.*sqrt(1i*k/mu))./cosh(H*sqrt(1i*k/mu)) - 1)*exp(1i*k*t);
-        f(2) = eps*x + eps*y + eps*t;
-        f(3) = eps*x + eps*y + eps*t;
-        f(4) = eps*x + eps*y + eps*t;
-        f(5) = p1*cos(k*t) + eps*x + eps*y; % this is the forcing in x direction
+        f(1) = sm*x + sm*y + sm*t+   1i*p1/(k)*(cosh(y.*sqrt(1i*k/mu))./cosh(H*sqrt(1i*k/mu)) - 1)*exp(1i*k*t);
+        f(2) = sm*x + sm*y + sm*t;
+        f(3) = sm*x + sm*y + sm*t;
+        f(4) = sm*x + sm*y + sm*t;
+        f(5) = p1*cos(k*t); % this is the forcing in x direction
         
         fS.BC = [2 2;1 1];
         

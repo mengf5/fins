@@ -491,7 +491,12 @@ if length(iB) == 1
     end
     
     for i = 2:length(jB)-1
-        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB,jB(i),axis,hx,hy) + f(x(iB,jB(i)),y(iB,jB(i)),t2);
+        if twilightZone<=6
+            F = f(x(iB,jB(i)),y(iB,jB(i)),t2);
+        else
+            F = 0;
+        end
+        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB,jB(i),axis,hx,hy) + F;
     end
     
     if twilightZone<=6
@@ -510,7 +515,12 @@ else
     end
     
     for i = 2:length(iB)-1
-        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB(i),jB,axis,hx,hy) + f(x(iB(i),jB),y(iB(i),jB),t2);
+        if twilightZone<=6
+            F = f(x(iB,jB(i)),y(iB,jB(i)),t2);
+        else
+            F = 0;
+        end
+        approxPx(i) = approxPx(i) + mu*getCurlCurl(U,V,iB(i),jB,axis,hx,hy) + F;
     end
 
     if twilightZone<=6

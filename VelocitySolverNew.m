@@ -239,12 +239,30 @@ end
 
 % form the rhs matrix of the convective part fE - convU - p_x
 %--------------------------------------------------------------------------
-rhsuC =  fxE(x(i,j),y(i,j),t1) ...
+if tw == 1
+    
+    fxE = fxE(x(i,j),y(i,j),t1);
+    fyE = fyE(x(i,j),y(i,j),t1);
+    
+elseif tw==0
+    
+    if fS.twilightZone>=7
+        fxE = fxE(x(i,j),y(i,j),t1);
+    else
+        fxE = 0;
+    end
+    
+    fyE = 0;
+    
+end
+    
+
+rhsuC =  fxE ...
     + d4u1(i,j) + ...
     - convu(i,j)...
     - (-PN(i+2,j) + 8*PN(i+1,j) - 8*PN(i-1,j) + PN(i-2,j))/(12*hx);
 
-rhsvC = beta*g*(TemN(i,j)-tref) + fyE(x(i,j),y(i,j),t1) ...
+rhsvC = beta*g*(TemN(i,j)-tref) + fyE ...
     + d4v1(i,j) + ...
     - convv(i,j) ...
     - (-PN(i,j+2) + 8*PN(i,j+1) - 8*PN(i,j-1) + PN(i,j-2))/(12*hy);
@@ -1137,7 +1155,13 @@ end
 % ignore uyy term for a moment
 % all the rest terms are equals to 0 on a no slip wall
 
-Uxx = (1/mu)* ( dpdxApprox - fx(x(iB,jB),y(iB,jB),t2));
+if tw == 1
+    F = fx(x(iB,jB),y(iB,jB),t2);
+else
+    F = 0;
+end
+
+Uxx = (1/mu)* ( dpdxApprox - F);
 
 if tw > 0
     
