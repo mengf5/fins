@@ -2,14 +2,14 @@ function caseConvergence(varargin)
 
 % clearvars -except err rate
 close all
-nameappenSetup = 'tz9Check';
+nameappenSetup = 'tz6CenterSoSlipNu1e-4';
 %8378 for test
 
-cg3 = 1;
+cg3 = 0;
 sm = 1e-300;
 
 fS     =ins;
-fS.tEnd=2.;
+fS.tEnd=1.;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
@@ -24,8 +24,8 @@ fS.directSolve = 1;
 fS.plotting = 0;
 fS.makeMovie =0;
 
-fS.BC = [2 2;1 1];
-fS.twilightZone = 9; % 1 for trigSpolyT, 2 for poly2
+fS.BC = [1 1;1 1];
+fS.twilightZone = 6; % 1 for trigSpolyT, 2 for poly2
 if fS.twilightZone >= 9;
     fS.tw   = 0; % 1 for trigSpolyT, 2 for poly2
 else
@@ -33,14 +33,14 @@ else
 end
 fS.cons = 1;         % 1 adv             2 divR         3 skew
 fS.alpha = 0.01;
-fS.WENO = 0;
+fS.WENO = 1;
 fS.uw = 0;
 
 gridx = [76 151 301];
 gridy = [76 151 301];
 
-%gridx = [11];
-%gridy = [11];
+gridx = [76];
+gridy = [76];
 
 %with cfl =.9, tw == 4, tEnd=1.1, gridx=gridy = 401; This takes roughly 9 hours with direct solve
 
@@ -50,9 +50,9 @@ fS.domain = [-1 1; -1 1];
 %     fS.domain = [0 2*pi; 0 2*pi];
 % end
 
-fS.al                 =  0.01;                                         % thermal diffusitity, alpha
+fS.al                 =  1.e-3;                                       % thermal diffusitity, alpha
 fS.K                  =  0;                                           % thermal conductivity K
-fS.mu                 =  .01;                                          % Kinematic viscosity nu
+fS.mu                 =  1.e-3;                                       % Kinematic viscosity nu
 fS.tref               =  2;                                           % Treference T_{\infty};
 fS.beta               =  1;                                           % thermal expansion
 fS.g                  =  0;                                           % gravity g
@@ -176,10 +176,10 @@ switch fS.twilightZone  % u::1 v::2 p::3 tem::4
 %         f(4) = (2+x+y/2+x^2/2+y^2/4)*(1+2*t);
 
     case 4 %% trig
-        f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t*0.2));
-        f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t*0.2));
-        f(3) = (sin(pi*x)*sin(pi*y))*(cos(pi*t*0.2));
-        f(4) = eps.*(sin(pi*y)*sin(pi*x))*(cos(pi*t*0.2)+1);
+        f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t));
+        f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t));
+        f(3) = (sin(pi*x)*sin(pi*y))*(cos(pi*t));
+        f(4) = eps.*(sin(pi*y)*sin(pi*x))*(cos(pi*t)+1);
     case 5  %% trig u,v always larger to 0
         f(1) = (sin(pi*x))^2*sin(2*pi*y)*(cos(pi*t)+2)+4;
         f(2) = -sin(2*pi*x)*(sin(pi*y))^2*(cos(pi*t)+2)+4;

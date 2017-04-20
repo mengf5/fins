@@ -160,7 +160,6 @@ if max(abs(ad41),abs(ad42)) > 0
         abs((-VN(i,j+2) + 8*VN(i,j+1) - 8*VN(i,j-1) + VN(i,j-2))/(12*hy)));
     maxgrad = max(max(graduv1));
     
-    
     lapu1 = (UN(i+2,j) -4*UN(i+1,j) +6*UN(i,j) -4*UN(i-1,j)+UN(i-2,j)) + ...
         (UN(i,j+2) -4*UN(i,j+1) +6*UN(i,j) -4*UN(i,j-1)+UN(i,j-2));
     

@@ -80,8 +80,8 @@ j = jStart:jEnd;
 
 cdx = alpha*(12*mubx);
 
-if cdx == 0
-    cdx = alpha/dtn;%1*0.1/hx^2;
+if cdx == 0    
+    cdx = alpha/fS.dt;%1*0.1/hx^2;
 end
 
 if tw == 1
@@ -516,7 +516,7 @@ else
     
     for i = 2:length(iB)-1
         if twilightZone<=6
-            F = f(x(iB,jB(i)),y(iB,jB(i)),t2);
+            F = f(x(iB(i),jB),y(iB(i),jB),t2);
         else
             F = 0;
         end
