@@ -9,8 +9,15 @@ function [lhsU,lhsV] = formLHS(fS)
 % 6. function L = setZero(L,M,pts,lPts)
 % 7. function L = setExt(L,side,Stride,M,pts)
 %--------------------------------------------------------------------------
-  
+
 % get info from INS class
+
+% if 1, use 4/6th order extrapolation on the first ghost line
+% for tangetial velocity ( tangentExtOrder determines the order)
+% 042317 fm
+tangentExt      = fS.tangentExt;
+tangentExtOrder = fS.tangentExtOrder;
+
 Nxg = fS.Nxg;
 Nyg = fS.Nyg;
 
@@ -119,7 +126,7 @@ for side = 0:1
         %----------------------------------------------------------------
         % on the ghost lines
         %----------------------------------------------------------------
-
+        
         switch localBC
             
             case 1
@@ -132,10 +139,28 @@ for side = 0:1
                 
                 if axis == 0
                     lhsU  = setDx(lhsU,hx,side,Nyg,M,bcPts,lBcPts);
-                    lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts,pos);
+                    
+                    if tangentExt == 1
+                        
+                        lhsV  = setExt(lhsV,side,Nyg,M,bcPts);
+                        
+                    elseif tangentExt == 0
+                        
+                        lhsV  = setDxx(lhsV,hx,side,Nyg,M,bcPts,lBcPts,pos);
+                        
+                    end
                     
                 elseif axis == 1
-                    lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts,pos);
+                    
+                    if tangentExt == 1
+                        lhsU  = setExt(lhsU,side,1,M,bcPts);
+                        
+                    elseif tangentExt == 0
+                        
+                        lhsU  = setDxx(lhsU,hy,side,1,M,bcPts,lBcPts,pos);
+                        
+                    end
+                    
                     lhsV  = setDx(lhsV,hy,side,1,M,bcPts,lBcPts);
                     
                 end
@@ -209,104 +234,104 @@ end
 
 for sideX = 0:1
     for sideY = 0:1
-
-      pxC = (sideX==0)*ia + (sideX==1)*ib;
-      pyC = (sideY==0)*ja + (sideY==1)*jb;
-      
-      chooseBC(1) = BC(1,1+sideX);
-      chooseBC(2) = BC(2,1+sideY);
-      
-      if max( chooseBC ) < 4
         
-        [localBC,whichBC] =  max( chooseBC );
-        axisBC = (whichBC -1);
+        pxC = (sideX==0)*ia + (sideX==1)*ib;
+        pyC = (sideY==0)*ja + (sideY==1)*jb;
         
-      else
-        fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
-        fprintf('proceed with extreme caution \n');
-        pause;
+        chooseBC(1) = BC(1,1+sideX);
+        chooseBC(2) = BC(2,1+sideY);
         
-      end
-
-      switch localBC
-             
-        case 1
-            %do nothing 
-	case 2
-
-	  side = (axisBC==0)*sideX + (axisBC==1)*sideY;
-      sideMatch = abs(side-1);
-
-	  if side == 0
-	    %do nothing
-
-	  elseif side == 1
-	    
-        % * = (Nx,Ny)
-	    %
-        %       #
-        %       #
-	    % xxxxxx*oo
-	    %       x
-	    %       x
-	    %       x
-	    
-	    for pos = 0:2 % fixing *oo
-
-	      px = pxC + (axisBC == 0) * pos;
-	      py = pyC + (axisBC == 1) * pos;
-
-	      pxIndex = getIndex(fS,px,px,py,py);
-	      lPxIndex = 1;
-          lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
-          lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
-
-          lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);	      
-          lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
-          
-          matchPx = px - (axisBC==0)*(Nx-1);
-          matchPy = py - (axisBC==1)*(Ny-1);
-          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
-
-	      lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
-          lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
-
-	    end
-
-
-	    for pos = 1:2 % fixing ##
-
-	      px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
-	      py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
-
-	      pxIndex = getIndex(fS,px,px,py,py);
-	      lPxIndex = 1;
-          
-          lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
-          lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
-          
-          lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);
-          lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
-          
-          matchPx = px - (axisBC==0)*(Nx-1);
-          matchPy = py - (axisBC==1)*(Ny-1);
-          matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
-          
-          lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
-          lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
-
-	    end
-	    
-	    
-	  end
-	  
-
-	case 3
-	  %do nothing
-
-      end
-      
-      
+        if max( chooseBC ) < 4
+            
+            [localBC,whichBC] =  max( chooseBC );
+            axisBC = (whichBC -1);
+            
+        else
+            fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+            fprintf('proceed with extreme caution \n');
+            pause;
+            
+        end
+        
+        switch localBC
+            
+            case 1
+                %do nothing
+            case 2
+                
+                side = (axisBC==0)*sideX + (axisBC==1)*sideY;
+                sideMatch = abs(side-1);
+                
+                if side == 0
+                    %do nothing
+                    
+                elseif side == 1
+                    
+                    % * = (Nx,Ny)
+                    %
+                    %       #
+                    %       #
+                    % xxxxxx*oo
+                    %       x
+                    %       x
+                    %       x
+                    
+                    for pos = 0:2 % fixing *oo
+                        
+                        px = pxC + (axisBC == 0) * pos;
+                        py = pyC + (axisBC == 1) * pos;
+                        
+                        pxIndex = getIndex(fS,px,px,py,py);
+                        lPxIndex = 1;
+                        lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
+                        lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
+                        
+                        lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);
+                        lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
+                        
+                        matchPx = px - (axisBC==0)*(Nx-1);
+                        matchPy = py - (axisBC==1)*(Ny-1);
+                        matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+                        
+                        lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
+                        lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
+                        
+                    end
+                    
+                    
+                    for pos = 1:2 % fixing ##
+                        
+                        px = pxC + (axisBC == 1) * (-1)^(sideX+1)* pos;
+                        py = pyC + (axisBC == 0) * (-1)^(sideY+1)* pos;
+                        
+                        pxIndex = getIndex(fS,px,px,py,py);
+                        lPxIndex = 1;
+                        
+                        lhsU = setZero(lhsU,M,pxIndex,lPxIndex);
+                        lhsV = setZero(lhsV,M,pxIndex,lPxIndex);
+                        
+                        lhsU = setOne(lhsU,M,+1,pxIndex,pxIndex,lPxIndex);
+                        lhsV = setOne(lhsV,M,+1,pxIndex,pxIndex,lPxIndex);
+                        
+                        matchPx = px - (axisBC==0)*(Nx-1);
+                        matchPy = py - (axisBC==1)*(Ny-1);
+                        matchPxIndex = getIndex(fS,matchPx,matchPx,matchPy,matchPy);
+                        
+                        lhsU = setOne(lhsU,M,-1,pxIndex,matchPxIndex,lPxIndex);
+                        lhsV = setOne(lhsV,M,-1,pxIndex,matchPxIndex,lPxIndex);
+                        
+                    end
+                    
+                    
+                end
+                
+                
+            case 3
+                %do nothing
+                
+        end
+        
+        
     end
 end
 
@@ -336,22 +361,22 @@ for sideX = 0:1
         px2Index = getIndex(fS,px2,px2,py2,py2);
         px3Index = getIndex(fS,px3,px3,py3,py3);
         px4Index = getIndex(fS,px4,px4,py4,py4);
-
-	chooseBC(1) = BC(1,1+sideX);
-	chooseBC(2) = BC(2,1+sideY);
-	
-    if max( chooseBC ) < 4
         
-        [localBC,whichBC] =  max( chooseBC );
-        axisBC = (whichBC -1);
+        chooseBC(1) = BC(1,1+sideX);
+        chooseBC(2) = BC(2,1+sideY);
         
-    else
-        fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
-        fprintf('proceed with extreme caution \n');
-        pause;
+        if max( chooseBC ) < 4
+            
+            [localBC,whichBC] =  max( chooseBC );
+            axisBC = (whichBC -1);
+            
+        else
+            fprintf('these could be wrong, since the developer havenot investigated this yet.\n');
+            fprintf('proceed with extreme caution \n');
+            pause;
+            
+        end
         
-    end
-
         switch localBC
             
             case 1
@@ -373,40 +398,40 @@ for sideX = 0:1
                 coeff  =[1,-15/4 ,3 ,-1/4];
                 coeff4 =[1,-30   ,32,-3  ];
                 
-%                 px1E=[];
-%                 px2E=[];
-%                 px3E=[];
-%                 px4E=[];
-%                 
-%                 py1E=[];
-%                 py2E=[];
-%                 py3E=[];
-%                 py4E=[];
-%                 
-%                 coeff=1;
-%                coeff4=1;
-
-
+                %                 px1E=[];
+                %                 px2E=[];
+                %                 px3E=[];
+                %                 px4E=[];
+                %
+                %                 py1E=[];
+                %                 py2E=[];
+                %                 py3E=[];
+                %                 py4E=[];
+                %
+                %                 coeff=1;
+                %                coeff4=1;
+                
+                
             case 2
-
-	      stripeMatch = Nx*(axisBC==0) + Ny*(axisBC==1);
-	      
-	      side = sideX*(axisBC==0) + sideY*(axisBC==1);
-	      
-              px1E = px1 + (-1)^side*(stripeMatch - 1);
-              py1E = py1 ;
-              
-              px2E = px2 + (-1)^side*(stripeMatch - 1);
-              py2E = py2 ;
-              
-              px3E = px3 + (-1)^side*(stripeMatch - 1);
-              py3E = py3 ;
-              
-              px4E = px4 + (-1)^side*(stripeMatch - 1);
-              py4E = py4 ;
-              
-              coeff =[1,-1];
-              coeff4=[1,-1];
+                
+                stripeMatch = Nx*(axisBC==0) + Ny*(axisBC==1);
+                
+                side = sideX*(axisBC==0) + sideY*(axisBC==1);
+                
+                px1E = px1 + (-1)^side*(stripeMatch - 1);
+                py1E = py1 ;
+                
+                px2E = px2 + (-1)^side*(stripeMatch - 1);
+                py2E = py2 ;
+                
+                px3E = px3 + (-1)^side*(stripeMatch - 1);
+                py3E = py3 ;
+                
+                px4E = px4 + (-1)^side*(stripeMatch - 1);
+                py4E = py4 ;
+                
+                coeff =[1,-1];
+                coeff4=[1,-1];
                 
                 
             case 3
@@ -560,8 +585,15 @@ end
 
 function L = setExt(L,side,Stride,M,pts)
 
-extOrder = 6;
-coeff = [1, -6, 15, -20, 15, -6, 1];
+extOrder = 4;
+%extOrder = fS.tangentOrder;
+if extOrder == 6
+    coeff = [1, -6, 15, -20, 15, -6, 1];
+elseif extOrder == 4
+    coeff = [1, -4, 6, -4, 1];
+end
+    
+
 
 for i = 1:extOrder+1
     

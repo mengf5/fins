@@ -1,13 +1,13 @@
 function imexTimeStepping
 close all
-xv = linspace(-.1,.1,201);
-yv = linspace(-1,1,201);
+xv = linspace(-5,.1,101);
+yv = linspace(-1,1,101);
 
 [X,Y] = meshgrid(xv,yv); %generate grids for contour
 Z = X+1i*Y; % complex number
 
 order = 4;
-fixStep=0;
+fixStep=1;
 localOrder = 5;
 addTerm = 'L';
 newTimeLevel = 3;
@@ -15,10 +15,10 @@ fLCBDF =0 ;
 
 %% IMEXBDF
 
-for k = 1:5
+for k = 1:1
     
     r = 1 + (k-3)*0.2*1;
-    %r = 1;
+    r = 1;
     
     lC = ['c','b','r','m','k'];
     
@@ -212,7 +212,7 @@ for k = 1:5
     end
     
     %h = figure(1);
-    contour(X,Y,p1,[1 1],'LineWidth',2,'LineColor',lC(k)); %contour for |R(z)|=1
+    contour(X,Y,p1,[1 1],'LineWidth',2,'LineColor','k'); %contour for |R(z)|=1
     grid on
     %,'LineColor','r'
     hold on

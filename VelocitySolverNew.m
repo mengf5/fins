@@ -16,6 +16,12 @@ function [count,U,V,rhsuC,rhsvC,maxgrad] = VelocitySolverNew(t1,t2,count,fS)
 
 %read in fS;
 %--------------------------------------------------------------------------
+
+% if 1, use 4/6th order extrapolation on the first ghost line
+% for tangetial velocity ( tangentExtOrder determines the order)
+% 042317 fm
+tangentExt = fS.tangentExt;
+
 dt  = fS.dt;
 % dte = fS.dte;
 % dtn = fS.dtn;
@@ -142,8 +148,28 @@ for axis =0:1
     localBC = BC(axis+1,side);
     % on the boundary
     if localBC == 2
+        
         iStart = iStart - (axis==0);
         jStart = jStart - (axis==1);
+              
+    end
+end
+
+% add slip wall 042417 fm
+for axis = 0:1
+    for side = 0:1
+        
+        localBC = BC(axis+1,side+1);
+        
+        if localBC == 4
+            
+            iStart = iStart - (axis==0);
+            jStart = jStart - (axis==1);
+            
+            iEnd   = iEnd   + (axis==0);
+            jEnd   = jEnd   + (axis==1);
+        end
+        
     end
 end
 
@@ -254,7 +280,7 @@ elseif tw==0
     fyE = 0;
     
 end
-    
+
 
 rhsuC =  fxE ...
     + d4u1(i,j) + ...
@@ -564,6 +590,7 @@ elseif tExplicit == 0
                     rhsV(bcx,bcy) = v(x(bcx,bcy),y(bcx,bcy),t2);
                     
                 case 4
+                             
                     
                 case 5
                     
@@ -584,14 +611,39 @@ elseif tExplicit == 0
                         
                         rhsU(bcx,bcy) =  getCompUx(V,fS,bcx,bcy,axis,side,pos);
                         axisV=1;
-                        rhsV(bcx,bcy) =  getCompUxx(V,fS,bcx,bcy,axisV,side,pos,count);
+                        
+                        if tangentExt == 1
+                            
+                            rhsV(bcx,bcy)  = getZero(bcx,bcy);
+                            
+                        elseif tangentExt ==0
+                            
+                            [bcxB,bcyB] = getBCGLlocation(axis,side,ia,ib,ja,jb,0);
+                            mu4 = getArtifitialDissipation( fS,axis,bcxB,bcyB,hx,hy);
+                            %mu4 = 1e-3;
+                            
+                            rhsV(bcx,bcy) =  getCompUxx(V,fS,bcx,bcy,axisV,side,pos,count,mu4);
+                            
+                        end
                         
                     elseif axis == 1
                         
                         rhsV(bcx,bcy) =  getCompUx(U,fS,bcx,bcy,axis,side,pos);
                         axisU = 0;
-                        rhsU(bcx,bcy) =  getCompUxx(U,fS,bcx,bcy,axisU,side,pos,count);
                         
+                        if tangentExt == 1
+                            
+                            rhsU(bcx,bcy) =  getZero(bcx,bcy);
+                            
+                        elseif tangentExt == 0
+                            
+                            [bcxB,bcyB] = getBCGLlocation(axis,side,ia,ib,ja,jb,0);
+                            mu4 = getArtifitialDissipation( fS,axis,bcxB,bcyB,hx,hy);
+                            %mu4 = 1e-3;
+                            
+                            rhsU(bcx,bcy) =  getCompUxx(U,fS,bcx,bcy,axisU,side,pos,count,mu4);
+                            
+                        end
                     end
                     
                     pos = 2;
@@ -603,7 +655,7 @@ elseif tExplicit == 0
                     
                     
                     if axis == 0
-                        rhsU(bcx,bcy)  = getCompUxxx(fS,count,iB,jB); 
+                        rhsU(bcx,bcy)  = getCompUxxx(fS,count,iB,jB);
                         rhsV(bcx,bcy)  = getZero(bcx,bcy);
                         
                     elseif axis == 1
@@ -627,6 +679,23 @@ elseif tExplicit == 0
                     end
                     
                 case 4
+                    
+                    pos = 1;
+                    
+                    [bcx,bcy] = getBCGLlocation(axis,side,ia,ib,ja,jb,pos);
+                    
+                    if axis == 0
+                        
+                        rhsU(bcx,bcy) =  getCompUx(V,fS,bcx,bcy,axis,side,pos);
+
+                        rhsV(bcx,bcy) =  getCompUxZero(fS,bcx,bcy,axis,side,pos);
+                    
+                    elseif axis == 1
+                        
+                        rhsU(bcx,bcy) =  getCompUxZero(fS,bcx,bcy,axis,side,pos);
+
+                    end
+                    
                     
                 case 5
                     
@@ -788,17 +857,17 @@ elseif tExplicit == 0
                     rhsU(px3,py3) = coeff(1)*D1u +  coeff(2)*D2u;
                     rhsV(px3,py3) = coeff(1)*D1v +  coeff(2)*D2v;
                     
-%                     rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
-%                     rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
-%                     
-%                     rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
-%                     rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
-%                     
-%                     rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
-%                     rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
-%                     
-%                     rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
-%                     rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
+                    %                     rhsU(px1,py1) = u(x(px1,py1),y(px1,py1),t2);
+                    %                     rhsV(px1,py1) = v(x(px1,py1),y(px1,py1),t2);
+                    %
+                    %                     rhsU(px2,py2) = u(x(px2,py2),y(px2,py2),t2);
+                    %                     rhsV(px2,py2) = v(x(px2,py2),y(px2,py2),t2);
+                    %
+                    %                     rhsU(px3,py3) = u(x(px3,py3),y(px3,py3),t2);
+                    %                     rhsV(px3,py3) = v(x(px3,py3),y(px3,py3),t2);
+                    %
+                    %                     rhsU(px4,py4) = u(x(px4,py4),y(px4,py4),t2);
+                    %                     rhsV(px4,py4) = v(x(px4,py4),y(px4,py4),t2);
                     
                     
                 case 3
@@ -1108,7 +1177,7 @@ end
 end
 
 
-function Uxx = getCompUxx(U,fS,bcx,bcy,axis,side,pos,count)
+function Uxx = getCompUxx(U,fS,bcx,bcy,axis,side,pos,count,mu4)
 
 tw = fS.tw;
 mu = fS.mu;
@@ -1117,6 +1186,7 @@ t2 = fS.t2;
 x = fS.x;
 y = fS.y;
 
+mu = mu + mu4;
 
 % keep the exact uxx here for debug
 % dudx2 = (axis==0)*fS.dudx2 + (axis=1)*fS.dvdy2;
@@ -1140,11 +1210,11 @@ dpdxApprox = getDpdx(fS,iB,jB,count,axis,h,order);
 if axis == 0
     fx   =  fS.fx ;
     dpdx =  fS.dpdx ;
-
+    
 elseif axis == 1
     fx   = fS.fy;
     dpdx =  fS.dpdy ;
-
+    
 end
 
 %dpdxApprox = dpdx(x(iB,jB),y(iB,jB),t2);
@@ -1160,7 +1230,7 @@ else
     F = 0;
 end
 
-Uxx = (1/mu)* ( dpdxApprox - F);
+Uxx = (1./mu).* ( dpdxApprox - F);
 
 if tw > 0
     
@@ -1178,7 +1248,7 @@ if tw > 0
         dudx2 = fS.dvdy2 ;
     end
     
-    Uxx = (1/mu)*(dudt(x(iB,jB),y(iB,jB),t2) ...
+    Uxx = (1./mu).*(dudt(x(iB,jB),y(iB,jB),t2) ...
         +  u(x(iB,jB),y(iB,jB),t2).*dudx(x(iB,jB),y(iB,jB),t2) ...
         +  v(x(iB,jB),y(iB,jB),t2).*dudy(x(iB,jB),y(iB,jB),t2) ...
         + dpdxApprox ...
@@ -1191,7 +1261,7 @@ elseif tw == 0
     
 end
 
-
+%Uxx = Uxx - (1./mu)*mu4;
 
 
 
@@ -1236,29 +1306,29 @@ yShift =   (axis==1);
 if order == 1
     
     dpdx  = ((-1)* PE(i + xShift*2, j + yShift*2) ...
-    + 8* PE(i + xShift, j + yShift) + ...
-    (+1)* PE(i - xShift*2, j - yShift*2) ...
-    - 8* PE(i - xShift, j - yShift)  ...
-    )/(12*h);
-
-
-%     dpdx  = ( ...
-%     + 1* PE(i + xShift, j + yShift) + ...
-%     - 1* PE(i - xShift, j - yShift)  ...
-%     )/(2*h);
+        + 8* PE(i + xShift, j + yShift) + ...
+        (+1)* PE(i - xShift*2, j - yShift*2) ...
+        - 8* PE(i - xShift, j - yShift)  ...
+        )/(12*h);
+    
+    
+    %     dpdx  = ( ...
+    %     + 1* PE(i + xShift, j + yShift) + ...
+    %     - 1* PE(i - xShift, j - yShift)  ...
+    %     )/(2*h);
     
 elseif order == 2
     dpdx  = ((-1)* PE(i + xShift*2, j + yShift*2) ...
-    + 16* PE(i + xShift, j + yShift) +   ...
-    (-1)* PE(i - xShift*2, j - yShift*2) ...
-    + 16* PE(i - xShift, j - yShift) +   ...
-    (-30)* PE(i           , j          ) )/(12*h^2);
-
-%     dpdx  = ( ...
-%     + 1* PE(i + xShift, j + yShift) +   ...
-%     + 1* PE(i - xShift, j - yShift) +   ...
-%     (-2)* PE(i           , j          ) )/(h^2);
-
+        + 16* PE(i + xShift, j + yShift) +   ...
+        (-1)* PE(i - xShift*2, j - yShift*2) ...
+        + 16* PE(i - xShift, j - yShift) +   ...
+        (-30)* PE(i           , j          ) )/(12*h^2);
+    
+    %     dpdx  = ( ...
+    %     + 1* PE(i + xShift, j + yShift) +   ...
+    %     + 1* PE(i - xShift, j - yShift) +   ...
+    %     (-2)* PE(i           , j          ) )/(h^2);
+    
 end
 
 end
@@ -1457,5 +1527,37 @@ elseif tw==0
     D2v = 0;
     
 end
+
+end
+
+function mu4 = getArtifitialDissipation( fS,axis,i,j,hx,hy)
+
+UN = fS.UN;
+VN = fS.VN;
+
+ad41 = 2;
+ad42 = 2;
+
+graduv1 = 0.25*(abs((-UN(i+2,j) + 8*UN(i+1,j) - 8*UN(i-1,j) + UN(i-2,j))/(12*hx)) + ...
+    abs((-UN(i,j+2) + 8*UN(i,j+1) - 8*UN(i,j-1) + UN(i,j-2))/(12*hy))+...
+    abs((-VN(i+2,j) + 8*VN(i+1,j) - 8*VN(i-1,j) + VN(i-2,j))/(12*hx))+...
+    abs((-VN(i,j+2) + 8*VN(i,j+1) - 8*VN(i,j-1) + VN(i,j-2))/(12*hy)));
+
+maxgrad = max(max(graduv1));
+
+if axis == 1 %axis 1 u is the tangential velocity
+    
+    lapU = (UN(i+2,j) -4*UN(i+1,j) +6*UN(i,j) -4*UN(i-1,j)+UN(i-2,j)) + ...
+        (UN(i,j+2) -4*UN(i,j+1) +6*UN(i,j) -4*UN(i,j-1)+UN(i,j-2));
+    
+elseif axis ==0
+    
+    lapU = (VN(i+2,j) -4*VN(i+1,j) +6*VN(i,j) -4*VN(i-1,j)+VN(i-2,j)) + ...
+        (VN(i,j+2) -4*VN(i,j+1) +6*VN(i,j) -4*VN(i,j-1)+VN(i,j-2));
+        
+end
+
+mu4 = (ad41+graduv1*ad42).*(hx^2 + hy^2);
+%mu4 = -(ad41+graduv1*ad42).*lapU;
 
 end

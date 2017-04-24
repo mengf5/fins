@@ -70,6 +70,12 @@ classdef ins < handle
       beta               =  0;                                              % thermal expansion
       g                  =  9.81;                                           % gravity g
       
+% if 1, use 4/6th order extrapolation on the first ghost line  
+% for tangetial velocity ( tangentExtOrder determines the order) 
+% 042317 fm
+      tangentExt      = 0;
+      tangentExtOrder = 6; % can be 4 or 6 
+
       %% supporting I/O 
       path;
       plotting           = 0;

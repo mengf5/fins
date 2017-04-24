@@ -2,14 +2,14 @@ function caseConvergence(varargin)
 
 % clearvars -except err rate
 close all
-nameappenSetup = 'tz6CenterSoSlipNu1e-4';
+nameappenSetup = 'tz6BwenoSlipNu1e-4';
 %8378 for test
 
 cg3 = 0;
 sm = 1e-300;
 
 fS     =ins;
-fS.tEnd=1.;
+fS.tEnd=5.;
 fS.tOrder=4;
 fS.tMethod=2;
 fS.tExplicit=0;
@@ -20,6 +20,10 @@ fS.extOrder=6;
 fS.uvSwitch=0;
 fS.CFLfix=.9;
 fS.directSolve = 1;
+
+fS.tangentExt      = 0;
+fS.tangentExtOrder = 6; % can be 4 or 6 
+
 
 fS.plotting = 0;
 fS.makeMovie =0;
@@ -50,9 +54,9 @@ fS.domain = [-1 1; -1 1];
 %     fS.domain = [0 2*pi; 0 2*pi];
 % end
 
-fS.al                 =  1.e-3;                                       % thermal diffusitity, alpha
+fS.al                 =  1.e-4;                                       % thermal diffusitity, alpha
 fS.K                  =  0;                                           % thermal conductivity K
-fS.mu                 =  1.e-3;                                       % Kinematic viscosity nu
+fS.mu                 =  1.e-4;                                       % Kinematic viscosity nu
 fS.tref               =  2;                                           % Treference T_{\infty};
 fS.beta               =  1;                                           % thermal expansion
 fS.g                  =  0;                                           % gravity g
